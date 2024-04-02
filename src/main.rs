@@ -38,7 +38,7 @@ async fn main_with_exitcode() -> Result<i32, String> {
     if _result.is_err() {
         Cli::command()
             // .color(clap::ColorChoice::Always) // coloring does not work here for some reason (but it does for default help?)
-            .print_long_help()
+            .print_help()
             .unwrap_or_default();
         return Ok(2); // not really ok but usage already printed.
     }

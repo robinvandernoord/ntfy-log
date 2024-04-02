@@ -69,8 +69,9 @@ fn get_update_server() -> String {
 pub async fn get_latest(url: &str, pkg: &str) -> Option<Version> {
     let json = get_json(url).await?;
     let row = json.get(&pkg)?;
-    let version_str = row.get("version")?.to_string();
-    return Some(Version::from_string(&version_str));
+    let version_str = row.get("version")?.as_str()?;
+
+    return Some(Version::from_string(version_str));
 }
 
 #[inline(always)]

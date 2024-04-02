@@ -117,9 +117,7 @@ pub async fn self_update() -> Result<i32, String> {
 
     match get_latest(&url, &pkg).await {
         Some(available) => {
-            if available <= installed {
-                // fixme
-
+            if available > installed {
                 let location = download_latest(&url, &pkg).await?;
 
                 eprintln!(
@@ -131,7 +129,8 @@ pub async fn self_update() -> Result<i32, String> {
                 );
                 return Ok(0);
             } else {
-                eprintln!(">> ntfy | {}", "already on the latest version".green());
+                let msg = format!("already on the latest version ({})", installed);
+                eprintln!(">> ntfy | {}", msg.green());
             }
             Ok(0)
         }

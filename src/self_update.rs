@@ -5,7 +5,7 @@ use std::fs;
 
 use crate::constants::SELF_UPDATE_SERVER;
 use crate::helpers::normalize_url;
-use crate::http::{download_binary, get_json};
+use crate::http::{download_binary_with_loading_indicator, get_json};
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct Version {
@@ -65,6 +65,7 @@ fn get_update_server() -> String {
     return normalize_url(SELF_UPDATE_SERVER, "");
 }
 
+#[inline(never)]
 pub async fn get_latest(url: &str, pkg: &str) -> Option<Version> {
     let json = get_json(url).await?;
     let row = json.get(&pkg)?;
@@ -104,7 +105,8 @@ async fn download_latest(url: &str, pkg: &str) -> Result<String, String> {
 
     let download_url = format!("{url}/{arch}/{pkg}");
 
-    download_binary(&download_url, &tmp_location).await?;
+    // download_binary(&download_url, &tmp_location).await?;
+    download_binary_with_loading_indicator(&download_url, &tmp_location).await?;
     install_binary(&tmp_location, &bin_location)?;
 
     Ok(bin_location)

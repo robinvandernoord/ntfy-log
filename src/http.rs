@@ -2,8 +2,10 @@ use owo_colors::OwoColorize;
 
 use serde_json::Value;
 use std::fs::File;
-use std::io::copy;
+use std::io::{self, copy, Write};
 use std::os::unix::fs::PermissionsExt;
+use std::time::Duration;
+use tokio::task;
 
 pub async fn get_json(url: &str) -> Option<Value> {
     let response = reqwest::get(url).await;
@@ -47,4 +49,34 @@ pub async fn download_binary(download_url: &str, bin_location: &str) -> Result<(
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+// async fn fake_download_binary(_: &str, _: &str) -> Result<(), String> {
+//     // Simulating download
+//     tokio::time::sleep(Duration::from_secs(5)).await;
+//     Ok(())
+// }
+
+pub async fn download_binary_with_loading_indicator(
+    download_url: &str,
+    bin_location: &str,
+) -> Result<(), String> {
+    let spinner = task::spawn(async {
+        let spinner_chars = vec!['|', '/', '-', '\\'];
+        let mut idx = 0;
+        loop {
+            eprint!("\rDownloading {} ", spinner_chars[idx]);
+            idx = (idx + 1) % spinner_chars.len();
+            io::stdout().flush().unwrap();
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    });
+
+    let download_task = download_binary(download_url, bin_location);
+
+    let download_result = download_task.await;
+    spinner.abort(); // Abort the spinner loop as download completes
+    eprint!("\r\x1B[2K"); // clear the line
+
+    return download_result;
 }

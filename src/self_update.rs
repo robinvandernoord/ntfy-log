@@ -95,22 +95,33 @@ fn get_current_bin_location() -> Result<String, String> {
 }
 
 fn install_binary(tmp_location: &str, bin_location: &str) -> Result<(), String> {
-    fs::rename(tmp_location, bin_location).map_err(|e| e.to_string())?;
-    Ok(())
+    return fs::rename(tmp_location, bin_location).map_err(|e| e.to_string());
 }
 
-async fn download_latest(url: &str, pkg: &str) -> Result<String, String> {
+async fn download_latest(url: &str, pkg: &str, tmp: &str) -> Result<String, String> {
     let bin_location = get_current_bin_location()?;
-    let tmp_location = String::from("/tmp/download-ntfy-log.bin");
     let arch = &get_arch()?;
 
     let download_url = format!("{url}/{arch}/{pkg}");
 
     // download_binary(&download_url, &tmp_location).await?;
-    download_binary_with_loading_indicator(&download_url, &tmp_location).await?;
-    install_binary(&tmp_location, &bin_location)?;
+    download_binary_with_loading_indicator(&download_url, tmp).await?;
+    install_binary(tmp, &bin_location)?;
 
     Ok(bin_location)
+}
+
+fn cleanup(file: &str) {
+    fs::remove_file(file).unwrap_or_default();
+}
+
+async fn download_latest_with_cleanup(url: &str, pkg: &str) -> Result<String, String> {
+    let tmp_location = String::from("/tmp/download-ntfy-log.bin");
+    let result = download_latest(url, pkg, &tmp_location).await;
+
+    cleanup(&tmp_location); // remove trailing tmpfile whether download and install completed or not
+
+    return result;
 }
 
 pub async fn self_update() -> Result<i32, String> {
@@ -121,7 +132,7 @@ pub async fn self_update() -> Result<i32, String> {
     match get_latest(&url, &pkg).await {
         Some(available) => {
             if available > installed {
-                let location = download_latest(&url, &pkg).await?;
+                let location = download_latest_with_cleanup(&url, &pkg).await?;
 
                 eprintln!(
                     ">> ntfy | {} | upgraded {} from {} to {}",

@@ -40,17 +40,17 @@ def main():
         in targets
     ]
 
-    # for target in targets:
-    #     exit_code = os.system(f"cargo build --release --target {target}")
-    #     if exit_code:
-    #         exit(exit_code)
+    for target in targets:
+        exit_code = os.system(f"cargo build --release --target {target}")
+        if exit_code:
+            exit(exit_code)
 
-    # # separate loop to make sure none of the targets crashed
-    # for arch in archs:
-    #     binary_path = f"./target/{target}/release/{BINARY_NAME}"
-    #     os.system(
-    #         f"rclone copy --progress {binary_path} {RCLONE_ENDPOINT}:{BUCKET_NAME}/{arch}/"
-    #     )
+    # separate loop to make sure none of the targets crashed
+    for arch in archs:
+        binary_path = f"./target/{target}/release/{BINARY_NAME}"
+        os.system(
+            f"rclone copy --progress {binary_path} {RCLONE_ENDPOINT}:{BUCKET_NAME}/{arch}/"
+        )
 
     # update manifest:
     with tempfile.NamedTemporaryFile(suffix="build-release.json") as f:

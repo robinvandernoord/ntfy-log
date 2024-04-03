@@ -21,9 +21,11 @@ use self::self_update::{current_version, pkg_name, self_update};
 async fn print_version(logger: &Logger) -> Result<i32, String> {
     println!("{} {}", pkg_name(), current_version());
 
-    if logger.verbosity.is_some_and(|v| v != Level::Error) {
-        // print unless -q or default level
-        GlobalLogger::log(format!("Log level: {:?}", logger.verbosity));
+    match logger.verbosity {
+        Some(Level::Error) | None => {
+            // do nothing
+        }
+        Some(verbosity) => logger.log(format!("Log level: {:?}", verbosity)),
     }
 
     Ok(0)

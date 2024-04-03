@@ -42,6 +42,4 @@ The original stdout and stderr are still printed and the exit code is forwarded.
 
 ## Roadmap
 
-- Currently, debug info is always printed to stderr. This should be made a flag like `--verbose` or managed via some sort
-of loglevel.
 - Complex commands containing pipes and other operators are currently not supported. It would be nice to add those.

@@ -5,9 +5,9 @@ use std::os::unix::fs::PermissionsExt;
 use std::time::Duration;
 use tokio::task;
 
-use crate::log::Logger;
+use crate::log::GlobalLogger;
 
-pub async fn get_json(url: &str, logger: &Logger) -> Option<Value> {
+pub async fn get_json(url: &str) -> Option<Value> {
     let response = reqwest::get(url).await;
     return match response {
         Ok(response) => {
@@ -15,7 +15,7 @@ pub async fn get_json(url: &str, logger: &Logger) -> Option<Value> {
             return Some(json);
         }
         Err(e) => {
-            logger.error(e.to_string());
+            GlobalLogger::error(e.to_string());
             None
         }
     };

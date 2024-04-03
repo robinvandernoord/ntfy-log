@@ -6,7 +6,7 @@ use std::fs;
 use crate::constants::SELF_UPDATE_SERVER;
 use crate::helpers::normalize_url;
 use crate::http::{download_binary, download_binary_with_loading_indicator, get_json};
-use crate::log::Logger;
+use crate::log::{GlobalLogger, Logger};
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct Version {
@@ -62,13 +62,13 @@ pub fn current_version() -> Version {
 }
 
 #[inline(always)]
-fn get_update_server(logger: &Logger) -> String {
-    return normalize_url(SELF_UPDATE_SERVER, "", &logger);
+fn get_update_server() -> String {
+    return normalize_url(SELF_UPDATE_SERVER, "");
 }
 
 #[inline(never)]
-pub async fn get_latest(url: &str, pkg: &str, logger: &Logger) -> Option<Version> {
-    let json = get_json(url, &logger).await?;
+pub async fn get_latest(url: &str, pkg: &str) -> Option<Version> {
+    let json = get_json(url).await?;
     let row = json.get(&pkg)?;
     let version_str = row.get("version")?.as_str()?;
 
@@ -99,18 +99,13 @@ fn install_binary(tmp_location: &str, bin_location: &str) -> Result<(), String> 
     return fs::rename(tmp_location, bin_location).map_err(|e| e.to_string());
 }
 
-async fn download_latest(
-    url: &str,
-    pkg: &str,
-    tmp: &str,
-    logger: &Logger,
-) -> Result<String, String> {
+async fn download_latest(url: &str, pkg: &str, tmp: &str) -> Result<String, String> {
     let bin_location = get_current_bin_location()?;
     let arch = &get_arch()?;
 
     let download_url = format!("{url}/{arch}/{pkg}");
 
-    if logger.verbosity.is_some() {
+    if GlobalLogger::get_verbosity().is_some() {
         download_binary_with_loading_indicator(&download_url, &tmp).await?;
     } else {
         download_binary(&download_url, &tmp).await?;
@@ -125,13 +120,9 @@ fn cleanup(file: &str) {
     fs::remove_file(file).unwrap_or_default();
 }
 
-async fn download_latest_with_cleanup(
-    url: &str,
-    pkg: &str,
-    logger: &Logger,
-) -> Result<String, String> {
+async fn download_latest_with_cleanup(url: &str, pkg: &str) -> Result<String, String> {
     let tmp_location = String::from("/tmp/download-ntfy-log.bin");
-    let result = download_latest(url, pkg, &tmp_location, &logger).await;
+    let result = download_latest(url, pkg, &tmp_location).await;
 
     cleanup(&tmp_location); // remove trailing tmpfile whether download and install completed or not
 
@@ -140,13 +131,13 @@ async fn download_latest_with_cleanup(
 
 pub async fn self_update(logger: &Logger) -> Result<i32, String> {
     let installed = current_version();
-    let url = get_update_server(&logger);
+    let url = get_update_server();
     let pkg = pkg_name();
 
-    match get_latest(&url, &pkg, &logger).await {
+    match get_latest(&url, &pkg).await {
         Some(available) => {
             if available > installed {
-                let location = download_latest_with_cleanup(&url, &pkg, &logger).await?;
+                let location = download_latest_with_cleanup(&url, &pkg).await?;
 
                 logger.success(format!(
                     "upgraded {} from {} to {}",

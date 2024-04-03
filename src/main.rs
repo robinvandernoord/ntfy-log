@@ -8,6 +8,9 @@ mod ntfy;
 mod self_update;
 
 use clap::{CommandFactory, Parser};
+use clap_verbosity_flag::Level;
+
+use crate::log::GlobalLogger;
 
 use self::cli::Cli;
 use self::command::run_cmd;
@@ -15,24 +18,30 @@ use self::log::Logger;
 use self::ntfy::{setup_ntfy, Payload};
 use self::self_update::{current_version, pkg_name, self_update};
 
-async fn print_version() -> Result<i32, String> {
+async fn print_version(logger: &Logger) -> Result<i32, String> {
     println!("{} {}", pkg_name(), current_version());
+
+    if logger.verbosity.is_some_and(|v| v != Level::Error) {
+        // print unless -q or default level
+        GlobalLogger::log(format!("Log level: {:?}", logger.verbosity));
+    }
+
     Ok(0)
 }
 
 /// Main logic, but returns a Result(exit code | ntfy error) instead of exiting.
 async fn main_with_exitcode(args: &Cli, logger: &Logger) -> Result<i32, String> {
     if args.version {
-        return print_version().await;
+        return print_version(&logger).await;
     } else if args.self_update {
         return self_update(&logger).await;
     }
 
     let topic = args.get_topic();
 
-    let ntfy = setup_ntfy(&args.endpoint, &logger);
+    let ntfy = setup_ntfy(&args.endpoint);
 
-    let _result = run_cmd(&args.subcommand, &logger).await;
+    let _result = run_cmd(&args.subcommand).await;
 
     if _result.is_err() {
         Cli::command()
@@ -84,7 +93,7 @@ async fn main_with_exitcode(args: &Cli, logger: &Logger) -> Result<i32, String> 
 async fn main() -> ! {
     // color_eyre::install()?;
     let args = Cli::parse();
-    let logger = Logger::new(&args.verbose);
+    let logger = GlobalLogger::set_verbosity(&args.verbose);
 
     match main_with_exitcode(&args, &logger).await {
         Ok(code) => std::process::exit(code),

@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::process::Command;
 
+use crate::log::Logger;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CommandResult {
     pub command: String,
@@ -64,14 +66,17 @@ pub fn try_stdin() -> Result<CommandResult, InvalidArgsNoStdIn> {
     });
 }
 
-pub async fn run_cmd(args: &Vec<String>) -> Result<CommandResult, InvalidArgsNoStdIn> {
+pub async fn run_cmd(
+    args: &Vec<String>,
+    logger: &Logger,
+) -> Result<CommandResult, InvalidArgsNoStdIn> {
     if args.len() == 0 {
         // no subcommand arg(s), hopefully something was piped.
         return try_stdin();
     };
 
     let command = args.join(" ");
-    eprintln!(">> ntfy | {} | {}", "info".blue(), command.blue());
+    logger.info(command.blue().to_string());
 
     let result = if let Some((base, args)) = args.split_first() {
         let mut cmd = Command::new(base);
@@ -97,8 +102,8 @@ pub async fn run_cmd(args: &Vec<String>) -> Result<CommandResult, InvalidArgsNoS
         return Err(InvalidArgsNoStdIn {});
     };
 
-    print!("{}", result.stdout);
-    eprint!("{}", result.stderr);
+    logger.stdout(&result.stdout);
+    logger.stderr(&result.stderr);
 
     return Ok(result);
 }

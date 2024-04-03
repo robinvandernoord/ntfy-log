@@ -3,6 +3,7 @@ mod command;
 mod constants;
 mod helpers;
 mod http;
+mod log;
 mod ntfy;
 mod self_update;
 
@@ -11,6 +12,7 @@ use owo_colors::OwoColorize;
 
 use self::cli::Cli;
 use self::command::run_cmd;
+use self::log::Logger;
 use self::ntfy::{setup_ntfy, Payload};
 use self::self_update::{current_version, pkg_name, self_update};
 
@@ -20,20 +22,18 @@ async fn print_version() -> Result<i32, String> {
 }
 
 /// Main logic, but returns a Result(exit code | ntfy error) instead of exiting.
-async fn main_with_exitcode() -> Result<i32, String> {
-    let args = Cli::parse();
-
+async fn main_with_exitcode(args: &Cli, logger: &Logger) -> Result<i32, String> {
     if args.version {
         return print_version().await;
     } else if args.self_update {
-        return self_update().await;
+        return self_update(&logger).await;
     }
 
     let topic = args.get_topic();
 
-    let ntfy = setup_ntfy(&args.endpoint);
+    let ntfy = setup_ntfy(&args.endpoint, &logger);
 
-    let _result = run_cmd(&args.subcommand).await;
+    let _result = run_cmd(&args.subcommand, &logger).await;
 
     if _result.is_err() {
         Cli::command()
@@ -51,12 +51,8 @@ async fn main_with_exitcode() -> Result<i32, String> {
         payload = payload.title(&args.title)
     }
 
-    eprintln!(
-        ">> ntfy | {} | Sending {:?} to {}",
-        "info".blue(),
-        payload,
-        args.endpoint
-    );
+    logger.info(format!("Sending {:?} to {}", payload, args.endpoint));
+
     ntfy.send(&payload).await.map_err(|err| err.to_string())?;
 
     // also send 'title' to the success or failure channel:
@@ -72,12 +68,11 @@ async fn main_with_exitcode() -> Result<i32, String> {
 
     let secondary_payload = Payload::new(secondary_topic).message(&secondary_msg);
 
-    eprintln!(
-        ">> ntfy | {} | Sending {:?} to {}.",
-        "info".blue(),
-        secondary_payload,
-        args.endpoint
-    );
+    logger.info(format!(
+        "Sending {:?} to {}.",
+        secondary_payload, args.endpoint
+    ));
+
     ntfy.send(&secondary_payload)
         .await
         .map_err(|err| err.to_string())?;
@@ -89,11 +84,13 @@ async fn main_with_exitcode() -> Result<i32, String> {
 #[tokio::main]
 async fn main() -> ! {
     // color_eyre::install()?;
+    let args = Cli::parse();
+    let logger = Logger::new(&args.verbose);
 
-    match main_with_exitcode().await {
+    match main_with_exitcode(&args, &logger).await {
         Ok(code) => std::process::exit(code),
         Err(error) => {
-            eprintln!(">> ntfy | {} | {}", "error".red(), error);
+            logger.error(&error);
             std::process::exit(-1)
         }
     }

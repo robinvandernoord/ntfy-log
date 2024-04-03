@@ -11,8 +11,11 @@ pub struct Cli {
     #[arg(short, long, default_value_t = (DEFAULT_NTFY_SERVER).into())]
     pub endpoint: String,
 
-    #[arg(short, long)]
+    #[arg(short = 'V', long)]
     pub version: bool,
+
+    #[command(flatten)]
+    pub verbose: clap_verbosity_flag::Verbosity,
 
     #[arg(long)]
     pub self_update: bool,

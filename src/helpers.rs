@@ -1,7 +1,9 @@
 use owo_colors::OwoColorize;
 use url::Url;
 
-pub fn normalize_url(partial_url: &str, fallback: &str) -> String {
+use crate::log::Logger;
+
+pub fn normalize_url(partial_url: &str, fallback: &str, logger: &Logger) -> String {
     // Parse the partial URL
     let url = match Url::parse(partial_url) {
         Ok(url) => {
@@ -19,12 +21,12 @@ pub fn normalize_url(partial_url: &str, fallback: &str) -> String {
                     url
                 }
                 Err(err) => {
-                    eprintln!(
-                        ">> ntfy | {} | Invalid server ({}), using fallback ({})!",
-                        "warn".yellow(),
+                    logger.warn(format!(
+                        "Invalid server ({}), using fallback ({})!",
                         err.red(),
                         fallback.blue()
-                    );
+                    ));
+
                     // If there's still an error parsing the URL, print the error
                     Url::parse(fallback).unwrap()
                 }

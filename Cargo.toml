@@ -16,3 +16,4 @@ color-eyre = "0.6.3"
 owo-colors = "4.0.0"
 atty = "0.2.14"
 reqwest = { version = "0.11.27", default-features = false, features = ["json", "rustls-tls"]}
+clap-verbosity-flag = "2.2.0"

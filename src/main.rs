@@ -8,7 +8,6 @@ mod ntfy;
 mod self_update;
 
 use clap::{CommandFactory, Parser};
-use owo_colors::OwoColorize;
 
 use self::cli::Cli;
 use self::command::run_cmd;

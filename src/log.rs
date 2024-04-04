@@ -34,16 +34,9 @@ impl Logger {
 
     fn fmt_print<S: Into<String>>(&self, level: &str, text: S) {
         match &self.prefix {
-            None => eprintln!(
-                "{}",
-                format!("{} | {}", level, text.into())
-            ),
-            Some(prefix) => eprintln!(
-                "{}",
-                format!("{} | {} | {}", prefix, level, text.into())
-            )
+            None => eprintln!("{}", format!("{} | {}", level, text.into())),
+            Some(prefix) => eprintln!("{}", format!("{} | {} | {}", prefix, level, text.into())),
         }
-        
     }
 
     /// log without a level
@@ -52,9 +45,8 @@ impl Logger {
         if self.verbosity.is_some() {
             match &self.prefix {
                 None => eprintln!("{}", format!("{}", text.into())),
-                Some(prefix) => eprintln!("{}", format!("{} | {}", prefix, text.into()))
+                Some(prefix) => eprintln!("{}", format!("{} | {}", prefix, text.into())),
             }
-
         }
     }
 

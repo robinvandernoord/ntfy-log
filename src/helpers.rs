@@ -36,3 +36,15 @@ pub fn normalize_url(partial_url: &str, fallback: &str) -> String {
 
     return url.as_str().to_owned();
 }
+
+
+
+pub trait ResultToString<T, E> {
+    fn map_err_to_string(self) -> Result<T, String>;
+}
+
+impl<T, E: std::error::Error> ResultToString<T, E> for Result<T, E> {
+    fn map_err_to_string(self) -> Result<T, String> {
+        self.map_err(|e| e.to_string())
+    }
+}

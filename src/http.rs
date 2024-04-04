@@ -1,9 +1,11 @@
+use reqwest::Response;
 use serde_json::Value;
 use std::fs::File;
 use std::io::{self, copy, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::time::Duration;
 use tokio::task;
+use crate::helpers::ResultToString; // adds .map_err_to_string
 
 use crate::log::GlobalLogger;
 
@@ -21,34 +23,38 @@ pub async fn get_json(url: &str) -> Option<Value> {
     };
 }
 
+async fn handle_response(response: Response, to_location: &str) -> Result<(), Box<dyn std::error::Error> > {
+    // Create a new file at the specified location
+    let mut file = File::create(to_location)?;
+
+    // Copy the response body (binary data) to the file
+    let bytes = response.bytes().await?;
+    copy(&mut bytes.as_ref(), &mut file)?;
+
+    // set perms:
+    let metadata = file.metadata()?;
+    let mut permissions = metadata.permissions();
+
+    // 755 = rwx, rx, rx
+    permissions.set_mode(0o755);
+    file.set_permissions(permissions)?;
+
+    Ok(())
+}
+
 pub async fn download_binary(download_url: &str, bin_location: &str) -> Result<(), String> {
     // Send a GET request to the download URL
     let response = reqwest::get(download_url)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err_to_string()?;
 
     // Ensure the request was successful (status code 200)
     if !response.status().is_success() {
         return Err(format!("Failed to download binary: {}", response.status()));
     }
 
-    // Create a new file at the specified location
-    let mut file = File::create(bin_location).map_err(|e| e.to_string())?;
-
-    // Copy the response body (binary data) to the file
-    let bytes = response.bytes().await.map_err(|e| e.to_string())?;
-    copy(&mut bytes.as_ref(), &mut file).map_err(|e| e.to_string())?;
-
-    // set perms:
-    let metadata = file.metadata().map_err(|e| e.to_string())?;
-    let mut permissions = metadata.permissions();
-
-    // 755 = rwx, rx, rx
-    permissions.set_mode(0o755);
-    file.set_permissions(permissions)
-        .map_err(|e| e.to_string())?;
-
-    Ok(())
+    // map_err_to_string does not work on Box<dyn std::error::Error>
+    return handle_response(response, bin_location).await.map_err(|e|e.to_string());
 }
 
 // async fn fake_download_binary(_: &str, _: &str) -> Result<(), String> {

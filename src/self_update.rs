@@ -3,8 +3,9 @@ use std::env::current_exe;
 use std::fmt::{self};
 use std::fs;
 
+
 use crate::constants::SELF_UPDATE_SERVER;
-use crate::helpers::normalize_url;
+use crate::helpers::{normalize_url, ResultToString};
 use crate::http::{download_binary, download_binary_with_loading_indicator, get_json};
 use crate::log::{GlobalLogger, Logger};
 
@@ -96,7 +97,7 @@ fn get_current_bin_location() -> Result<String, String> {
 }
 
 fn install_binary(tmp_location: &str, bin_location: &str) -> Result<(), String> {
-    return fs::rename(tmp_location, bin_location).map_err(|e| e.to_string());
+    return fs::rename(tmp_location, bin_location).map_err_to_string();
 }
 
 async fn download_latest(url: &str, pkg: &str, tmp: &str) -> Result<String, String> {

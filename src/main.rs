@@ -95,7 +95,7 @@ async fn main_with_exitcode(args: &Cli, logger: &Logger) -> Result<i32, String> 
 async fn main() -> ! {
     // color_eyre::install()?;
     let args = Cli::parse();
-    let logger = GlobalLogger::set_verbosity(&args.verbose);
+    let logger = GlobalLogger::setup(&args.verbose);
 
     match main_with_exitcode(&args, &logger).await {
         Ok(code) => std::process::exit(code),

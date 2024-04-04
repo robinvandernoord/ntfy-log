@@ -3,7 +3,6 @@ use std::env::current_exe;
 use std::fmt::{self};
 use std::fs;
 
-
 use crate::constants::SELF_UPDATE_SERVER;
 use crate::helpers::{normalize_url, ResultToString};
 use crate::http::{download_binary, download_binary_with_loading_indicator, get_json};
@@ -136,22 +135,22 @@ pub async fn self_update(logger: &Logger) -> Result<i32, String> {
     let pkg = pkg_name();
 
     match get_latest(&url, &pkg).await {
-        Some(available) => {
-            if available > installed {
-                let location = download_latest_with_cleanup(&url, &pkg).await?;
+        Some(available) if available > installed => {
+            let location = download_latest_with_cleanup(&url, &pkg).await?;
 
-                logger.success(format!(
-                    "upgraded {} from {} to {}",
-                    location.blue(),
-                    installed.blue(),
-                    available.green()
-                ));
+            logger.success(format!(
+                "upgraded {} from {} to {}",
+                location.blue(),
+                installed.blue(),
+                available.green()
+            ));
 
-                return Ok(0);
-            } else {
-                let msg = format!("already on the latest version ({})", installed);
-                logger.log(msg.green().to_string());
-            }
+            Ok(0)
+        }
+        Some(_) => {
+            let msg = format!("already on the latest version ({})", installed);
+            logger.log(msg.green().to_string());
+
             Ok(0)
         }
         None => Err(String::from("Could not get latest available version")),

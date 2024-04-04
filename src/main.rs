@@ -45,11 +45,11 @@ async fn main_with_exitcode(args: &Cli, logger: &Logger) -> Result<i32, String> 
     let exit_code = match run_cmd(&args.subcommand).await {
         Err(_) => {
             Cli::command()
-            // .color(clap::ColorChoice::Always) // coloring does not work here for some reason (but it does for default help?)
-            .print_help()
-            .unwrap_or_default();
+                // .color(clap::ColorChoice::Always) // coloring does not work here for some reason (but it does for default help?)
+                .print_help()
+                .unwrap_or_default();
             2 // exit code 2
-        },
+        }
 
         Ok(result) => {
             let mut payload = result.build_payload(topic);
@@ -57,33 +57,31 @@ async fn main_with_exitcode(args: &Cli, logger: &Logger) -> Result<i32, String> 
             if args.title != "" {
                 payload = payload.title(&args.title)
             }
-        
+
             logger.info(format!("Sending {:?} to {}", payload, args.endpoint));
-        
+
             ntfy.send(&payload).await.map_err_to_string()?;
-        
+
             // also send 'title' to the success or failure channel:
             // todo: make this an option
             let suffix = match result.success() {
                 true => "success",
                 false => "failure",
             };
-        
+
             let secondary_topic = format!("{}--{}", topic, suffix);
-        
+
             let secondary_msg = payload.title.unwrap_or_default();
-        
+
             let secondary_payload = Payload::new(secondary_topic).message(&secondary_msg);
-        
+
             logger.info(format!(
                 "Sending {:?} to {}.",
                 secondary_payload, args.endpoint
             ));
-        
-            ntfy.send(&secondary_payload)
-                .await
-                .map_err_to_string()?;
-        
+
+            ntfy.send(&secondary_payload).await.map_err_to_string()?;
+
             result.exit_code
         }
     };

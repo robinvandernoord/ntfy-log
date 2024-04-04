@@ -1,3 +1,4 @@
+use crate::helpers::ResultToString; // adds .map_err_to_string
 use reqwest::Response;
 use serde_json::Value;
 use std::fs::File;
@@ -5,7 +6,6 @@ use std::io::{self, copy, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::time::Duration;
 use tokio::task;
-use crate::helpers::ResultToString; // adds .map_err_to_string
 
 use crate::log::GlobalLogger;
 
@@ -23,7 +23,10 @@ pub async fn get_json(url: &str) -> Option<Value> {
     };
 }
 
-async fn handle_response(response: Response, to_location: &str) -> Result<(), Box<dyn std::error::Error> > {
+async fn handle_response(
+    response: Response,
+    to_location: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Create a new file at the specified location
     let mut file = File::create(to_location)?;
 
@@ -44,9 +47,7 @@ async fn handle_response(response: Response, to_location: &str) -> Result<(), Bo
 
 pub async fn download_binary(download_url: &str, bin_location: &str) -> Result<(), String> {
     // Send a GET request to the download URL
-    let response = reqwest::get(download_url)
-        .await
-        .map_err_to_string()?;
+    let response = reqwest::get(download_url).await.map_err_to_string()?;
 
     // Ensure the request was successful (status code 200)
     if !response.status().is_success() {
@@ -54,7 +55,9 @@ pub async fn download_binary(download_url: &str, bin_location: &str) -> Result<(
     }
 
     // map_err_to_string does not work on Box<dyn std::error::Error>
-    return handle_response(response, bin_location).await.map_err(|e|e.to_string());
+    return handle_response(response, bin_location)
+        .await
+        .map_err(|e| e.to_string());
 }
 
 // async fn fake_download_binary(_: &str, _: &str) -> Result<(), String> {

@@ -30,27 +30,27 @@ def read_cargo():
 
 
 def main():
+
+    # target - arch tuples
     targets = [
-        "x86_64-unknown-linux-gnu",
-        "aarch64-unknown-linux-gnu",
-    ]
-    archs = [
-        _.split("-")[0]
-        for _
-        in targets
+        (target, target.split("-")[0])
+        for target in (
+            "x86_64-unknown-linux-gnu",
+            "aarch64-unknown-linux-gnu",
+        )
     ]
 
-    # for target in targets:
-    #     exit_code = os.system(f"cargo build --release --target {target}")
-    #     if exit_code:
-    #         exit(exit_code)
+    for target, _ in targets:
+        exit_code = os.system(f"cargo build --release --target {target}")
+        if exit_code:
+            exit(exit_code)
 
-    # # separate loop to make sure none of the targets crashed
-    # for arch in archs:
-    #     binary_path = f"./target/{target}/release/{BINARY_NAME}"
-    #     os.system(
-    #         f"rclone copy --progress {binary_path} {RCLONE_ENDPOINT}:{BUCKET_NAME}/{arch}/"
-    #     )
+    # separate loop to make sure none of the targets crashed
+    for target, arch in targets:
+        binary_path = f"./target/{target}/release/{BINARY_NAME}"
+        os.system(
+            f"rclone copy --progress {binary_path} {RCLONE_ENDPOINT}:{BUCKET_NAME}/{arch}/"
+        )
 
     # update manifest:
     with tempfile.NamedTemporaryFile(suffix="build-release.json") as f:
@@ -66,15 +66,16 @@ def main():
         )
 
         current_contents[BINARY_NAME] = read_cargo() | {
-            "downloads": {_: f"{BASE_DOWNLOAD_URL}/{_}/{BINARY_NAME}" for _ in archs}
+            "downloads": {arch: f"{BASE_DOWNLOAD_URL}/{arch}/{BINARY_NAME}" for (_, arch) in targets}
         }
         f_path.write_text(json.dumps(current_contents))
 
         os.system(
             f"rclone copyto --progress {f.name} {RCLONE_ENDPOINT}:{BUCKET_NAME}/index.json"
         )
-        # update dmanifest at download.s3.su6.nl
+        # updated manifest at download.s3.su6.nl
 
+        # sudo wget https://download.s3.su6.nl/$(uname -m)/ntfy-log -O /usr/local/bin/ntfy-log
 
 if __name__ == "__main__":
     main()

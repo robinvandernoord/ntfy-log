@@ -22,9 +22,11 @@ use self::self_update::{current_version, pkg_name, self_update};
 async fn print_version(logger: &Logger) -> Result<i32, String> {
     println!("{} {}", pkg_name(), current_version());
 
-    if logger.verbosity.is_some_and(|v| v != Level::Error) {
-        // print unless -q or default level
-        GlobalLogger::log(format!("Log level: {:?}", logger.verbosity));
+    match logger.verbosity {
+        Some(Level::Error) | None => {
+            // do nothing
+        }
+        Some(verbosity) => logger.log(format!("Log level: {:?}", verbosity)),
     }
 
     Ok(0)
@@ -94,7 +96,7 @@ async fn main_with_exitcode(args: &Cli, logger: &Logger) -> Result<i32, String> 
 async fn main() -> ! {
     // color_eyre::install()?;
     let args = Cli::parse();
-    let logger = GlobalLogger::set_verbosity(&args.verbose);
+    let logger = GlobalLogger::setup(&args.verbose);
 
     match main_with_exitcode(&args, &logger).await {
         Ok(code) => std::process::exit(code),

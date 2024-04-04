@@ -6,37 +6,55 @@ use color_eyre::owo_colors::OwoColorize;
 const PREFIX: &'static str = ">> ntfy";
 
 pub struct Logger {
-    pub prefix: &'static str, // todo: dynamic prefix?
+    pub prefix: Option<String>,
     pub verbosity: Option<Level>,
 }
 
 impl Logger {
     pub fn new(verbosity: &clap_verbosity_flag::Verbosity) -> Self {
         return Logger {
-            prefix: PREFIX,
+            prefix: Some(PREFIX.to_string()),
+            verbosity: verbosity.log_level(),
+        };
+    }
+
+    pub fn new_with_prefix(verbosity: &clap_verbosity_flag::Verbosity, prefix: &str) -> Self {
+        return Logger {
+            prefix: Some(prefix.to_string()),
             verbosity: verbosity.log_level(),
         };
     }
 
     const fn empty() -> Self {
         return Logger {
-            prefix: PREFIX,
+            prefix: None,
             verbosity: None,
         };
     }
 
     fn fmt_print<S: Into<String>>(&self, level: &str, text: S) {
-        eprintln!(
-            "{}",
-            format!("{} | {} | {}", self.prefix, level, text.into())
-        )
+        match &self.prefix {
+            None => eprintln!(
+                "{}",
+                format!("{} | {}", level, text.into())
+            ),
+            Some(prefix) => eprintln!(
+                "{}",
+                format!("{} | {} | {}", prefix, level, text.into())
+            )
+        }
+        
     }
 
     /// log without a level
     pub fn log<S: Into<String>>(&self, text: S) {
         // only hide if 'quiet'
         if self.verbosity.is_some() {
-            eprintln!("{}", format!("{} | {}", self.prefix, text.into()));
+            match &self.prefix {
+                None => eprintln!("{}", format!("{}", text.into())),
+                Some(prefix) => eprintln!("{}", format!("{} | {}", prefix, text.into()))
+            }
+
         }
     }
 
@@ -112,6 +130,25 @@ impl GlobalLogger {
         }
     }
 
+    pub fn setup(verbosity: &clap_verbosity_flag::Verbosity) -> &'static Logger {
+        GlobalLogger::set_verbosity(verbosity);
+        GlobalLogger::set_prefix(PREFIX);
+        return GlobalLogger::singleton();
+    }
+
+    pub fn get_prefix() -> &'static Option<String> {
+        unsafe {
+            return &GLOBAL_LOGGER._logger.prefix;
+        }
+    }
+
+    pub fn set_prefix(prefix: &str) -> &'static Logger {
+        unsafe {
+            *GLOBAL_LOGGER._logger.prefix.borrow_mut() = Some(prefix.to_string());
+            return &GLOBAL_LOGGER._logger;
+        }
+    }
+
     pub fn get_verbosity() -> Option<Level> {
         unsafe {
             return GLOBAL_LOGGER._logger.verbosity;
@@ -163,7 +200,9 @@ mod tests {
 
     #[test]
     fn test_instances() {
-        let local_logger = Logger::new(&clap_verbosity_flag::Verbosity::new(4.into(), 0.into()));
+        let high_verbosity = clap_verbosity_flag::Verbosity::new(4.into(), 0.into());
+        let local_logger = Logger::new(&high_verbosity);
+        let prefixxed_logger = Logger::new_with_prefix(&high_verbosity, "! hi !");
 
         let global_logger = GlobalLogger::singleton();
 
@@ -172,6 +211,7 @@ mod tests {
         local_logger.log("Log 1");
         global_logger.log("Log 2");
         GlobalLogger::log("Log 3");
+        prefixxed_logger.log("Log 4");
 
         local_logger.error("Err 1");
         global_logger.error("Err 2");

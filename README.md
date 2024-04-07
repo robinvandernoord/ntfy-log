@@ -38,8 +38,13 @@ and `exit_code`.
 If the exit code is non-zero (indicating an error), the priority will be `High`.
 In addition, a second message containing simply the `title` is posted to `$topic--success` or `$topic--failure`.
 
-The original stdout and stderr are still printed and the exit code is forwarded.
+The original stdout and stderr are still printed (unless you pass `--quiet/-q`) and the exit code is forwarded. You can control the output level of `ntfy-log` logs by setting the verbosity level (default: errors only; `-v`: warnings too; `-vv`: informative messages too; `-vvv`: debug messages too; `-vvvv`: stack-trace level logging).
+
+### self-update
+You can use the `ntfy-log --self-update` subcommand to download the latest binary (if a newer version is available). This binary will be downloaded from [https://download.s3.su6.nl/].
+One can see the currently installed version with `ntfy-log --version`.
 
 ## Roadmap
 
-- Complex commands containing pipes and other operators are currently not supported. It would be nice to add those.
+- Complex commands containing pipes and other operators are currently not supported. It would be nice to add those. For now, you can pipe those into ntfy-log as follows: `my-command | with-pipes | ntfy-log <topic>`. Note: only stdout is recorded when using this method, and the exit code will always be 0 as this can not be determined from stdin.
+

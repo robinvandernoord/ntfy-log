@@ -83,28 +83,29 @@ pub async fn run_cmd(args: &Vec<String>) -> Result<CommandResult, InvalidArgsNoS
     let command = args.join(" ");
     logger.info(command.blue().to_string());
 
-    let result = if let Some((base, args)) = args.split_first() {
-        let mut cmd = Command::new(base);
-        cmd.args(args);
-
-        match cmd.output().await {
-            Ok(output) => CommandResult {
-                command: command,
-                stdout: String::from_utf8(output.stdout).unwrap_or_default(),
-                stderr: String::from_utf8(output.stderr).unwrap_or_default(),
-                exit_code: output.status.code().unwrap_or(-1),
-            },
-
-            Err(error) => CommandResult {
-                command: command,
-                stdout: String::from(""),
-                stderr: error.to_string(),
-                exit_code: error.raw_os_error().unwrap_or(-1),
-            },
-        }
-    } else {
-        // wtf happened?
+    if command.len() == 0 {
         return Err(InvalidArgsNoStdIn {});
+    }
+
+    let mut cmd = Command::new("bash");
+    cmd.arg("-c");
+    cmd.arg(&command);
+    // -> bash -c "<full command>"
+
+    let result = match cmd.output().await {
+        Ok(output) => CommandResult {
+            command: command,
+            stdout: String::from_utf8(output.stdout).unwrap_or_default(),
+            stderr: String::from_utf8(output.stderr).unwrap_or_default(),
+            exit_code: output.status.code().unwrap_or(-1),
+        },
+
+        Err(error) => CommandResult {
+            command: command,
+            stdout: String::from(""),
+            stderr: error.to_string(),
+            exit_code: error.raw_os_error().unwrap_or(-1),
+        },
     };
 
     logger.stdout(&result.stdout);

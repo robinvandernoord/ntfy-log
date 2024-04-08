@@ -54,6 +54,9 @@ pub fn try_stdin() -> Result<CommandResult, InvalidArgsNoStdIn> {
         return Err(InvalidArgsNoStdIn {});
     }
 
+    GlobalLogger::important("warn".yellow().to_string(), 
+    "Since complex bash commands (including pipes) is now supported by ntfy-push, using stdin is highly discouraged.");
+
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
 

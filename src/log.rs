@@ -81,6 +81,13 @@ impl Logger {
         }
     }
 
+    /// should be shown at the default verbosity level, but without the 'error' prefix
+    pub fn important<S1: Into<String>, S2: Into<String>>(&self, prefix: S1, text: S2) {
+        if self.verbosity.is_some_and(|v| v >= Level::Error) {
+            self.fmt_print(&prefix.into(), text)
+        }
+    }
+
     pub fn warn<S: Into<String>>(&self, text: S) {
         if self.verbosity.is_some_and(|v| v >= Level::Warn) {
             let level = "warn".yellow().to_string();
@@ -170,6 +177,10 @@ impl GlobalLogger {
     pub fn error<S: Into<String>>(text: S) {
         return GlobalLogger::singleton().error(text);
     }
+    pub fn important<S1: Into<String>, S2: Into<String>>(prefix: S1, text: S2) {
+        return GlobalLogger::singleton().important(prefix, text);
+    }
+
     pub fn info<S: Into<String>>(text: S) {
         return GlobalLogger::singleton().info(text);
     }

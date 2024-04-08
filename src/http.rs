@@ -15,11 +15,11 @@ pub async fn get_json(url: &str) -> Option<Value> {
         Ok(response) => {
             let json: Value = response.json().await.ok()?;
             return Some(json);
-        }
+        },
         Err(e) => {
             GlobalLogger::error(e.to_string());
             None
-        }
+        },
     };
 }
 
@@ -45,7 +45,10 @@ async fn handle_response(
     Ok(())
 }
 
-pub async fn download_binary(download_url: &str, bin_location: &str) -> Result<(), String> {
+pub async fn download_binary(
+    download_url: &str,
+    bin_location: &str,
+) -> Result<(), String> {
     // Send a GET request to the download URL
     let response = reqwest::get(download_url).await.map_err_to_string()?;
 

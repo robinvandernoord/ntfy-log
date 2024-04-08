@@ -16,7 +16,10 @@ pub struct Version {
 }
 
 impl fmt::Display for Version {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
         write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
     }
 }
@@ -67,7 +70,10 @@ fn get_update_server() -> String {
 }
 
 #[inline(never)]
-pub async fn get_latest(url: &str, pkg: &str) -> Option<Version> {
+pub async fn get_latest(
+    url: &str,
+    pkg: &str,
+) -> Option<Version> {
     let json = get_json(url).await?;
     let row = json.get(&pkg)?;
     let version_str = row.get("version")?.as_str()?;
@@ -95,11 +101,18 @@ fn get_current_bin_location() -> Result<String, String> {
     return exe_path.into_os_string().into_string().map_err(|_| err);
 }
 
-fn install_binary(tmp_location: &str, bin_location: &str) -> Result<(), String> {
+fn install_binary(
+    tmp_location: &str,
+    bin_location: &str,
+) -> Result<(), String> {
     return fs::rename(tmp_location, bin_location).map_err_to_string();
 }
 
-async fn download_latest(url: &str, pkg: &str, tmp: &str) -> Result<String, String> {
+async fn download_latest(
+    url: &str,
+    pkg: &str,
+    tmp: &str,
+) -> Result<String, String> {
     let bin_location = get_current_bin_location()?;
     let arch = &get_arch()?;
 
@@ -120,7 +133,10 @@ fn cleanup(file: &str) {
     fs::remove_file(file).unwrap_or_default();
 }
 
-async fn download_latest_with_cleanup(url: &str, pkg: &str) -> Result<String, String> {
+async fn download_latest_with_cleanup(
+    url: &str,
+    pkg: &str,
+) -> Result<String, String> {
     let tmp_location = String::from("/tmp/download-ntfy-log.bin");
     let result = download_latest(url, pkg, &tmp_location).await;
 
@@ -146,13 +162,13 @@ pub async fn self_update(logger: &Logger) -> Result<i32, String> {
             ));
 
             Ok(0)
-        }
+        },
         Some(_) => {
             let msg = format!("already on the latest version ({})", installed);
             logger.log(msg.green().to_string());
 
             Ok(0)
-        }
+        },
         None => Err(String::from("Could not get latest available version")),
     }
 }

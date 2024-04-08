@@ -3,13 +3,16 @@ use url::Url;
 
 use crate::log::GlobalLogger;
 
-pub fn normalize_url(partial_url: &str, fallback: &str) -> String {
+pub fn normalize_url(
+    partial_url: &str,
+    fallback: &str,
+) -> String {
     // Parse the partial URL
     let url = match Url::parse(partial_url) {
         Ok(url) => {
             // If the partial URL is parsed successfully, print the parsed URL
             url
-        }
+        },
         Err(_) => {
             // If there's an error parsing the URL, assume it doesn't have a scheme
             // and prepend a default scheme (e.g., "https://") before parsing again
@@ -19,7 +22,7 @@ pub fn normalize_url(partial_url: &str, fallback: &str) -> String {
                 Ok(url) => {
                     // Print the parsed URL
                     url
-                }
+                },
                 Err(err) => {
                     GlobalLogger::warn(format!(
                         "Invalid server ({}), using fallback ({})!",
@@ -29,9 +32,9 @@ pub fn normalize_url(partial_url: &str, fallback: &str) -> String {
 
                     // If there's still an error parsing the URL, print the error
                     Url::parse(fallback).unwrap()
-                }
+                },
             }
-        }
+        },
     };
 
     return url.as_str().to_owned();

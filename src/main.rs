@@ -25,7 +25,7 @@ async fn print_version(logger: &Logger) -> Result<i32, String> {
     match logger.verbosity {
         Some(Level::Error) | None => {
             // do nothing
-        }
+        },
         Some(verbosity) => logger.log(format!("Log level: {:?}", verbosity)),
     }
 
@@ -33,7 +33,10 @@ async fn print_version(logger: &Logger) -> Result<i32, String> {
 }
 
 /// Main logic, but returns a Result(exit code | ntfy error) instead of exiting.
-async fn main_with_exitcode(args: &Cli, logger: &Logger) -> Result<i32, String> {
+async fn main_with_exitcode(
+    args: &Cli,
+    logger: &Logger,
+) -> Result<i32, String> {
     if args.version {
         return print_version(&logger).await;
     } else if args.self_update {
@@ -51,7 +54,7 @@ async fn main_with_exitcode(args: &Cli, logger: &Logger) -> Result<i32, String> 
                 .print_help()
                 .unwrap_or_default();
             2 // exit code 2
-        }
+        },
 
         Ok(result) => {
             let mut payload = result.build_payload(topic);
@@ -85,7 +88,7 @@ async fn main_with_exitcode(args: &Cli, logger: &Logger) -> Result<i32, String> 
             ntfy.send(&secondary_payload).await.map_err_to_string()?;
 
             result.exit_code
-        }
+        },
     };
 
     Ok(exit_code)
@@ -103,6 +106,6 @@ async fn main() -> ! {
         Err(error) => {
             logger.error(&error);
             std::process::exit(-1)
-        }
+        },
     }
 }

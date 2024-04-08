@@ -20,7 +20,10 @@ impl Logger {
         };
     }
 
-    pub fn new_with_prefix(verbosity: &clap_verbosity_flag::Verbosity, prefix: &str) -> Self {
+    pub fn new_with_prefix(
+        verbosity: &clap_verbosity_flag::Verbosity,
+        prefix: &str,
+    ) -> Self {
         return Logger {
             prefix: Some(prefix.to_string()),
             verbosity: verbosity.log_level(),
@@ -34,7 +37,11 @@ impl Logger {
         };
     }
 
-    fn fmt_print<S: Into<String>>(&self, level: &str, text: S) {
+    fn fmt_print<S: Into<String>>(
+        &self,
+        level: &str,
+        text: S,
+    ) {
         match &self.prefix {
             None => eprintln!("{}", format!("{} | {}", level, text.into())),
             Some(prefix) => eprintln!("{}", format!("{} | {} | {}", prefix, level, text.into())),
@@ -42,7 +49,10 @@ impl Logger {
     }
 
     /// log without a level
-    pub fn log<S: Into<String>>(&self, text: S) {
+    pub fn log<S: Into<String>>(
+        &self,
+        text: S,
+    ) {
         // only hide if 'quiet'
         if self.verbosity.is_some() {
             match &self.prefix {
@@ -52,7 +62,10 @@ impl Logger {
         }
     }
 
-    pub fn success<S: Into<String>>(&self, text: S) {
+    pub fn success<S: Into<String>>(
+        &self,
+        text: S,
+    ) {
         // only hide if 'quiet'
         if self.verbosity.is_some() {
             let level = "success".green().to_string();
@@ -61,20 +74,29 @@ impl Logger {
     }
 
     /// Print something to stdout (unless -q)
-    pub fn stdout<S: Into<String>>(&self, text: S) {
+    pub fn stdout<S: Into<String>>(
+        &self,
+        text: S,
+    ) {
         if self.verbosity.is_some() {
             print!("{}", text.into());
         }
     }
 
     /// Print something to stderr (unless -q)
-    pub fn stderr<S: Into<String>>(&self, text: S) {
+    pub fn stderr<S: Into<String>>(
+        &self,
+        text: S,
+    ) {
         if self.verbosity.is_some() {
             eprint!("{}", text.into());
         }
     }
 
-    pub fn error<S: Into<String>>(&self, text: S) {
+    pub fn error<S: Into<String>>(
+        &self,
+        text: S,
+    ) {
         if self.verbosity.is_some_and(|v| v >= Level::Error) {
             let level = "error".red().to_string();
             self.fmt_print(&level, text)
@@ -82,27 +104,40 @@ impl Logger {
     }
 
     /// should be shown at the default verbosity level, but without the 'error' prefix
-    pub fn important<S1: Into<String>, S2: Into<String>>(&self, prefix: S1, text: S2) {
+    pub fn important<S1: Into<String>, S2: Into<String>>(
+        &self,
+        prefix: S1,
+        text: S2,
+    ) {
         if self.verbosity.is_some_and(|v| v >= Level::Error) {
             self.fmt_print(&prefix.into(), text)
         }
     }
 
-    pub fn warn<S: Into<String>>(&self, text: S) {
+    pub fn warn<S: Into<String>>(
+        &self,
+        text: S,
+    ) {
         if self.verbosity.is_some_and(|v| v >= Level::Warn) {
             let level = "warn".yellow().to_string();
             self.fmt_print(&level, text)
         }
     }
 
-    pub fn info<S: Into<String>>(&self, text: S) {
+    pub fn info<S: Into<String>>(
+        &self,
+        text: S,
+    ) {
         if self.verbosity.is_some_and(|v| v >= Level::Info) {
             let level = "info".blue().to_string();
             self.fmt_print(&level, text)
         }
     }
 
-    pub fn debug<S: Into<String>>(&self, text: S) {
+    pub fn debug<S: Into<String>>(
+        &self,
+        text: S,
+    ) {
         if self.verbosity.is_some_and(|v| v >= Level::Debug) {
             let level = "debug".purple().to_string();
             self.fmt_print(&level, text)
@@ -177,7 +212,10 @@ impl GlobalLogger {
     pub fn error<S: Into<String>>(text: S) {
         return GlobalLogger::singleton().error(text);
     }
-    pub fn important<S1: Into<String>, S2: Into<String>>(prefix: S1, text: S2) {
+    pub fn important<S1: Into<String>, S2: Into<String>>(
+        prefix: S1,
+        text: S2,
+    ) {
         return GlobalLogger::singleton().important(prefix, text);
     }
 

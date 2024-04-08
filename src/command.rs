@@ -21,7 +21,10 @@ impl CommandResult {
         return self.exit_code == 0;
     }
 
-    pub fn build_payload(&self, topic: &str) -> Payload {
+    pub fn build_payload(
+        &self,
+        topic: &str,
+    ) -> Payload {
         let priority = match self.success() {
             true => Priority::Default,
             false => Priority::High,
@@ -35,7 +38,7 @@ impl CommandResult {
                 });
 
                 fallback.to_string()
-            }
+            },
         };
 
         return Payload::new(topic)

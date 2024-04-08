@@ -33,18 +33,14 @@ ntfy-log --endpoint ntfy.s3.su6.nl --title "Custom Title" secret-channel ls -alh
 `--endpoint`: by default this will point to `ntfy.sh`
 `--title`: by dfeault this will simply be the command (e.g. `ls` in example 1)
 
-After executing `subcommand`, a JSON result will be sent to the provided topic, with the `command,` `stdout`, `stderr`,
-and `exit_code`.
+After executing `subcommand`, a JSON result will be sent to the provided topic, with the `command,` `stdout`, `stderr`, and `exit_code`.  
 If the exit code is non-zero (indicating an error), the priority will be `High`.
 In addition, a second message containing simply the `title` is posted to `$topic--success` or `$topic--failure`.
+
+`subcommand` can also be a complex statement (e.g. with pipes (`|`) and logical operators (`&&`, `||`)). Only the final stdout, stderr and exit code are captured (just like you would only see those when running the command normally).
 
 The original stdout and stderr are still printed (unless you pass `--quiet/-q`) and the exit code is forwarded. You can control the output level of `ntfy-log` logs by setting the verbosity level (default: errors only; `-v`: warnings too; `-vv`: informative messages too; `-vvv`: debug messages too; `-vvvv`: stack-trace level logging).
 
 ### self-update
 You can use the `ntfy-log --self-update` subcommand to download the latest binary (if a newer version is available). This binary will be downloaded from [https://download.s3.su6.nl/].
 One can see the currently installed version with `ntfy-log --version`.
-
-## Roadmap
-
-- Complex commands containing pipes and other operators are currently not supported. It would be nice to add those. For now, you can pipe those into ntfy-log as follows: `my-command | with-pipes | ntfy-log <topic>`. Note: only stdout is recorded when using this method, and the exit code will always be 0 as this can not be determined from stdin.
-

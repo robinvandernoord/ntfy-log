@@ -11,16 +11,16 @@ use crate::log::GlobalLogger;
 
 pub async fn get_json(url: &str) -> Option<Value> {
     let response = reqwest::get(url).await;
-    return match response {
+    match response {
         Ok(response) => {
             let json: Value = response.json().await.ok()?;
-            return Some(json);
+            Some(json)
         },
         Err(e) => {
             GlobalLogger::error(e.to_string());
             None
         },
-    };
+    }
 }
 
 async fn handle_response(
@@ -58,9 +58,9 @@ pub async fn download_binary(
     }
 
     // map_err_to_string does not work on Box<dyn std::error::Error>
-    return handle_response(response, bin_location)
+    handle_response(response, bin_location)
         .await
-        .map_err(|e| e.to_string());
+        .map_err(|e| e.to_string())
 }
 
 // async fn fake_download_binary(_: &str, _: &str) -> Result<(), String> {
@@ -74,7 +74,7 @@ pub async fn download_binary_with_loading_indicator(
     bin_location: &str,
 ) -> Result<(), String> {
     let spinner = task::spawn(async {
-        let spinner_chars = vec!['|', '/', '-', '\\'];
+        let spinner_chars = ['|', '/', '-', '\\'];
         let mut idx = 0;
         loop {
             eprint!("\rDownloading {} ", spinner_chars[idx]);
@@ -90,5 +90,5 @@ pub async fn download_binary_with_loading_indicator(
     spinner.abort(); // Abort the spinner loop as download completes
     eprint!("\r\x1B[2K"); // clear the line
 
-    return download_result;
+    download_result
 }

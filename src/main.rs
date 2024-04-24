@@ -38,9 +38,9 @@ async fn main_with_exitcode(
     logger: &Logger,
 ) -> Result<i32, String> {
     if args.version {
-        return print_version(&logger).await;
+        return print_version(logger).await;
     } else if args.self_update {
-        return self_update(&logger).await;
+        return self_update(logger).await;
     }
 
     let topic = args.get_topic();
@@ -59,7 +59,7 @@ async fn main_with_exitcode(
         Ok(result) => {
             let mut payload = result.build_payload(topic);
 
-            if args.title != "" {
+            if !args.title.is_empty() {
                 payload = payload.title(&args.title)
             }
 
@@ -101,10 +101,10 @@ async fn main() -> ! {
     let args = Cli::parse();
     let logger = GlobalLogger::setup(&args.verbose);
 
-    match main_with_exitcode(&args, &logger).await {
+    match main_with_exitcode(&args, logger).await {
         Ok(code) => std::process::exit(code),
         Err(error) => {
-            logger.error(&error);
+            logger.error(error);
             std::process::exit(-1)
         },
     }

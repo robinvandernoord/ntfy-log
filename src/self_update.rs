@@ -31,11 +31,11 @@ impl Version {
         let minor = env!("CARGO_PKG_VERSION_MINOR");
         let patch = env!("CARGO_PKG_VERSION_PATCH");
 
-        return Version {
+        Version {
             major: major.parse::<i32>().unwrap_or_default(),
             minor: minor.parse::<i32>().unwrap_or_default(),
             patch: patch.parse::<i32>().unwrap_or_default(),
-        };
+        }
     }
 
     fn from_string(version_str: &str) -> Self {
@@ -45,28 +45,28 @@ impl Version {
         let minor = parts.next().unwrap_or("0").parse().unwrap_or(0);
         let patch = parts.next().unwrap_or("0").parse().unwrap_or(0);
 
-        return Version {
+        Version {
             major,
             minor,
             patch,
-        };
+        }
     }
 }
 
 #[inline(always)]
 pub fn pkg_name() -> String {
     let name = env!("CARGO_PKG_NAME");
-    return name.to_string();
+    name.to_string()
 }
 
 #[inline(always)]
 pub fn current_version() -> Version {
-    return Version::from_cargo();
+    Version::from_cargo()
 }
 
 #[inline(always)]
 fn get_update_server() -> String {
-    return normalize_url(SELF_UPDATE_SERVER, "");
+    normalize_url(SELF_UPDATE_SERVER, "")
 }
 
 #[inline(never)]
@@ -75,10 +75,10 @@ pub async fn get_latest(
     pkg: &str,
 ) -> Option<Version> {
     let json = get_json(url).await?;
-    let row = json.get(&pkg)?;
+    let row = json.get(pkg)?;
     let version_str = row.get("version")?.as_str()?;
 
-    return Some(Version::from_string(version_str));
+    Some(Version::from_string(version_str))
 }
 
 #[inline(always)]
@@ -90,7 +90,7 @@ fn get_arch() -> Result<String, String> {
     #[cfg(target_arch = "aarch64")]
     return Ok(String::from("aarch64"));
 
-    return Err(String::from("Unsupported cpu architecture."));
+    Err(String::from("Unsupported cpu architecture."))
 }
 
 fn get_current_bin_location() -> Result<String, String> {
@@ -98,14 +98,14 @@ fn get_current_bin_location() -> Result<String, String> {
 
     let exe_path = current_exe().map_err(|_| &err)?;
 
-    return exe_path.into_os_string().into_string().map_err(|_| err);
+    exe_path.into_os_string().into_string().map_err(|_| err)
 }
 
 fn install_binary(
     tmp_location: &str,
     bin_location: &str,
 ) -> Result<(), String> {
-    return fs::rename(tmp_location, bin_location).map_err_to_string();
+    fs::rename(tmp_location, bin_location).map_err_to_string()
 }
 
 async fn download_latest(
@@ -119,12 +119,12 @@ async fn download_latest(
     let download_url = format!("{url}/{arch}/{pkg}");
 
     if GlobalLogger::get_verbosity().is_some() {
-        download_binary_with_loading_indicator(&download_url, &tmp).await?;
+        download_binary_with_loading_indicator(&download_url, tmp).await?;
     } else {
-        download_binary(&download_url, &tmp).await?;
+        download_binary(&download_url, tmp).await?;
     }
 
-    install_binary(&tmp, &bin_location)?;
+    install_binary(tmp, &bin_location)?;
 
     Ok(bin_location)
 }
@@ -142,7 +142,7 @@ async fn download_latest_with_cleanup(
 
     cleanup(&tmp_location); // remove trailing tmpfile whether download and install completed or not
 
-    return result;
+    result
 }
 
 pub async fn self_update(logger: &Logger) -> Result<i32, String> {

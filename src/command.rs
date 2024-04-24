@@ -18,7 +18,7 @@ pub struct CommandResult {
 
 impl CommandResult {
     pub fn success(&self) -> bool {
-        return self.exit_code == 0;
+        self.exit_code == 0
     }
 
     pub fn build_payload(
@@ -41,10 +41,10 @@ impl CommandResult {
             },
         };
 
-        return Payload::new(topic)
+        Payload::new(topic)
             .title(&self.command)
             .message(msg)
-            .priority(priority);
+            .priority(priority)
     }
 }
 
@@ -63,19 +63,19 @@ pub fn try_stdin() -> Result<CommandResult, InvalidArgsNoStdIn> {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
 
-    return Ok(CommandResult {
+    Ok(CommandResult {
         command: String::from("<stdin>"), // command is not known when getting data from stdin
         stdout: input,
 
         stderr: String::from(""), // stderr is usually not piped, unless it is combined with stdout into stdin.
         exit_code: 0, // unfortunately, you can't get the exit code of a piped command ($PIPESTATUS is bash-only)
-    });
+    })
 }
 
-pub async fn run_cmd(args: &Vec<String>) -> Result<CommandResult, InvalidArgsNoStdIn> {
+pub async fn run_cmd(args: &[String]) -> Result<CommandResult, InvalidArgsNoStdIn> {
     let logger = GlobalLogger::singleton();
 
-    if args.len() == 0 {
+    if args.is_empty() {
         // no subcommand arg(s), hopefully something was piped.
         return try_stdin();
     };
@@ -83,7 +83,7 @@ pub async fn run_cmd(args: &Vec<String>) -> Result<CommandResult, InvalidArgsNoS
     let command = args.join(" ");
     logger.info(command.blue().to_string());
 
-    if command.len() == 0 {
+    if command.is_empty() {
         return Err(InvalidArgsNoStdIn {});
     }
 
@@ -94,14 +94,14 @@ pub async fn run_cmd(args: &Vec<String>) -> Result<CommandResult, InvalidArgsNoS
 
     let result = match cmd.output().await {
         Ok(output) => CommandResult {
-            command: command,
+            command,
             stdout: String::from_utf8(output.stdout).unwrap_or_default(),
             stderr: String::from_utf8(output.stderr).unwrap_or_default(),
             exit_code: output.status.code().unwrap_or(-1),
         },
 
         Err(error) => CommandResult {
-            command: command,
+            command,
             stdout: String::from(""),
             stderr: error.to_string(),
             exit_code: error.raw_os_error().unwrap_or(-1),
@@ -111,5 +111,5 @@ pub async fn run_cmd(args: &Vec<String>) -> Result<CommandResult, InvalidArgsNoS
     logger.stdout(&result.stdout);
     logger.stderr(&result.stderr);
 
-    return Ok(result);
+    Ok(result)
 }

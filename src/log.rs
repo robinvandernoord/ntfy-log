@@ -5,7 +5,7 @@ use std::borrow::BorrowMut;
 use clap_verbosity_flag::Level;
 use color_eyre::owo_colors::OwoColorize;
 
-const PREFIX: &'static str = ">> ntfy";
+const PREFIX: &str = ">> ntfy";
 
 pub struct Logger {
     pub prefix: Option<String>,
@@ -14,27 +14,27 @@ pub struct Logger {
 
 impl Logger {
     pub fn new(verbosity: &clap_verbosity_flag::Verbosity) -> Self {
-        return Logger {
+        Logger {
             prefix: Some(PREFIX.to_string()),
             verbosity: verbosity.log_level(),
-        };
+        }
     }
 
     pub fn new_with_prefix(
         verbosity: &clap_verbosity_flag::Verbosity,
         prefix: &str,
     ) -> Self {
-        return Logger {
+        Logger {
             prefix: Some(prefix.to_string()),
             verbosity: verbosity.log_level(),
-        };
+        }
     }
 
     const fn empty() -> Self {
-        return Logger {
+        Logger {
             prefix: None,
             verbosity: None,
-        };
+        }
     }
 
     fn fmt_print<S: Into<String>>(
@@ -43,8 +43,8 @@ impl Logger {
         text: S,
     ) {
         match &self.prefix {
-            None => eprintln!("{}", format!("{} | {}", level, text.into())),
-            Some(prefix) => eprintln!("{}", format!("{} | {} | {}", prefix, level, text.into())),
+            None => eprintln!("{} | {}", level, text.into()),
+            Some(prefix) => eprintln!("{} | {} | {}", prefix, level, text.into()),
         }
     }
 
@@ -56,8 +56,8 @@ impl Logger {
         // only hide if 'quiet'
         if self.verbosity.is_some() {
             match &self.prefix {
-                None => eprintln!("{}", format!("{}", text.into())),
-                Some(prefix) => eprintln!("{}", format!("{} | {}", prefix, text.into())),
+                None => eprintln!("{}", text.into()),
+                Some(prefix) => eprintln!("{} | {}", prefix, text.into()),
             }
         }
     }
@@ -155,84 +155,78 @@ static mut GLOBAL_LOGGER: GlobalLogger = GlobalLogger::empty();
 
 impl GlobalLogger {
     const fn empty() -> Self {
-        return GlobalLogger {
+        GlobalLogger {
             _logger: Logger::empty(),
-        };
+        }
     }
 
     pub fn singleton() -> &'static Logger {
-        unsafe {
-            return &GLOBAL_LOGGER._logger;
-        }
+        unsafe { &GLOBAL_LOGGER._logger }
     }
 
     pub fn setup(verbosity: &clap_verbosity_flag::Verbosity) -> &'static Logger {
         GlobalLogger::set_verbosity(verbosity);
         GlobalLogger::set_prefix(PREFIX);
-        return GlobalLogger::singleton();
+        GlobalLogger::singleton()
     }
 
     pub fn get_prefix() -> &'static Option<String> {
-        unsafe {
-            return &GLOBAL_LOGGER._logger.prefix;
-        }
+        unsafe { &GLOBAL_LOGGER._logger.prefix }
     }
 
     pub fn set_prefix(prefix: &str) -> &'static Logger {
         unsafe {
             *GLOBAL_LOGGER._logger.prefix.borrow_mut() = Some(prefix.to_string());
-            return &GLOBAL_LOGGER._logger;
+            &GLOBAL_LOGGER._logger
         }
     }
 
     pub fn get_verbosity() -> Option<Level> {
-        unsafe {
-            return GLOBAL_LOGGER._logger.verbosity;
-        }
+        unsafe { GLOBAL_LOGGER._logger.verbosity }
     }
 
     pub fn set_verbosity(verbosity: &clap_verbosity_flag::Verbosity) -> &'static Logger {
         unsafe {
             *GLOBAL_LOGGER._logger.verbosity.borrow_mut() = verbosity.log_level();
-            return &GLOBAL_LOGGER._logger;
+            &GLOBAL_LOGGER._logger
         }
     }
 
     pub fn log<S: Into<String>>(text: S) {
-        return GlobalLogger::singleton().log(text);
+        GlobalLogger::singleton().log(text)
     }
 
     pub fn success<S: Into<String>>(text: S) {
-        return GlobalLogger::singleton().success(text);
+        GlobalLogger::singleton().success(text)
     }
     pub fn warn<S: Into<String>>(text: S) {
-        return GlobalLogger::singleton().warn(text);
+        GlobalLogger::singleton().warn(text)
     }
 
     pub fn error<S: Into<String>>(text: S) {
-        return GlobalLogger::singleton().error(text);
+        GlobalLogger::singleton().error(text)
     }
     pub fn important<S1: Into<String>, S2: Into<String>>(
         prefix: S1,
         text: S2,
     ) {
-        return GlobalLogger::singleton().important(prefix, text);
+        GlobalLogger::singleton().important(prefix, text)
     }
 
     pub fn info<S: Into<String>>(text: S) {
-        return GlobalLogger::singleton().info(text);
+        GlobalLogger::singleton().info(text)
     }
 
     pub fn debug<S: Into<String>>(text: S) {
-        return GlobalLogger::singleton().debug(text);
+        GlobalLogger::singleton().debug(text)
     }
 
     pub fn stdout<S: Into<String>>(text: S) {
-        return GlobalLogger::singleton().stdout(text);
+        GlobalLogger::singleton().stdout(text)
     }
 
     pub fn stderr<S: Into<String>>(text: S) {
-        return GlobalLogger::singleton().stderr(text);
+        GlobalLogger::singleton().stderr(text)
     }
 }
 
@@ -243,7 +237,7 @@ mod tests {
 
     #[test]
     fn test_instances() {
-        let high_verbosity = clap_verbosity_flag::Verbosity::new(4.into(), 0.into());
+        let high_verbosity = clap_verbosity_flag::Verbosity::new(4, 0);
         let local_logger = Logger::new(&high_verbosity);
         let prefixxed_logger = Logger::new_with_prefix(&high_verbosity, "! hi !");
 

@@ -19,17 +19,17 @@ use self::log::Logger;
 use self::ntfy::{setup_ntfy, Payload};
 use self::self_update::{current_version, pkg_name, self_update};
 
-async fn print_version(logger: &Logger) -> Result<i32, String> {
+fn print_version(logger: &Logger) -> i32 {
     println!("{} {}", pkg_name(), current_version());
 
     match logger.verbosity {
         Some(Level::Error) | None => {
             // do nothing
         },
-        Some(verbosity) => logger.log(format!("Log level: {:?}", verbosity)),
+        Some(verbosity) => logger.log(format!("Log level: {verbosity:?}")),
     }
 
-    Ok(0)
+    0
 }
 
 /// Main logic, but returns a Result(exit code | ntfy error) instead of exiting.
@@ -38,7 +38,7 @@ async fn main_with_exitcode(
     logger: &Logger,
 ) -> Result<i32, String> {
     if args.version {
-        return print_version(logger).await;
+        return Ok(print_version(logger));
     } else if args.self_update {
         return self_update(logger).await;
     }
@@ -60,7 +60,7 @@ async fn main_with_exitcode(
             let mut payload = result.build_payload(topic);
 
             if !args.title.is_empty() {
-                payload = payload.title(&args.title)
+                payload = payload.title(&args.title);
             }
 
             logger.info(format!("Sending {:?} to {}", payload, args.endpoint));
@@ -69,12 +69,14 @@ async fn main_with_exitcode(
 
             // also send 'title' to the success or failure channel:
             // todo: make this an option
-            let suffix = match result.success() {
-                true => "success",
-                false => "failure",
+
+            let suffix = if result.success() {
+                "success"
+            } else {
+                "failure"
             };
 
-            let secondary_topic = format!("{}--{}", topic, suffix);
+            let secondary_topic = format!("{topic}--{suffix}");
 
             let secondary_msg = payload.title.unwrap_or_default();
 

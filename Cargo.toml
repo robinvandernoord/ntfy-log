@@ -1,19 +1,39 @@
 [package]
 name = "ntfy-log"
+description = "Very simple CLI tool to log the result of a shell command to ntfy.sh"
+repository = "https://github.com/robinvandernoord/ntfy-log"
+keywords = ["logging", "ntfy", "ntfy-sh", "bash"]
+categories = ["development-tools", "development-tools::debugging"]
 version = "0.4.0"
 edition = "2021"
+license = "MIT"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 ntfy = "0.4.0"
 tokio = { version = "1", features = ["full"] }
-clap = { version = "4.0", features = ["derive"] }
-url = "2.5.0"
+clap = { version = "4.5", features = ["derive"] }
+url = "2.5"
 serde_json = "1.0"
-serde = "1.0.197"
+serde = "1.0"
 color-eyre = "0.6.3"
 owo-colors = "4.0.0"
 atty = "0.2.14"
-reqwest = { version = "0.11.27", default-features = false, features = ["json", "rustls-tls"]}
+reqwest = { version = "0.12.4", default-features = false, features = ["json", "rustls-tls"]}
 clap-verbosity-flag = "2.2.0"
+
+[lints.clippy]
+# categories:
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+# specific ones:
+module_name_repetitions = "allow"
+future_not_send = "allow"
+struct_excessive_bools = "allow"
+fn_params_excessive_bools = "allow"
+cast_possible_wrap = "allow"
+cast_possible_truncation = "allow"
+multiple_crate_versions = "allow"

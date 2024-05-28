@@ -8,7 +8,7 @@ use crate::helpers::{normalize_url, ResultToString};
 use crate::http::{download_binary, download_binary_with_loading_indicator, get_json};
 use crate::log::{GlobalLogger, Logger};
 
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, Eq, PartialOrd)]
 pub struct Version {
     pub major: i32,
     pub minor: i32,
@@ -25,13 +25,12 @@ impl fmt::Display for Version {
 }
 
 impl Version {
-    #[inline(always)]
     fn from_cargo() -> Self {
         let major = env!("CARGO_PKG_VERSION_MAJOR");
         let minor = env!("CARGO_PKG_VERSION_MINOR");
         let patch = env!("CARGO_PKG_VERSION_PATCH");
 
-        Version {
+        Self {
             major: major.parse::<i32>().unwrap_or_default(),
             minor: minor.parse::<i32>().unwrap_or_default(),
             patch: patch.parse::<i32>().unwrap_or_default(),
@@ -45,7 +44,7 @@ impl Version {
         let minor = parts.next().unwrap_or("0").parse().unwrap_or(0);
         let patch = parts.next().unwrap_or("0").parse().unwrap_or(0);
 
-        Version {
+        Self {
             major,
             minor,
             patch,
@@ -53,18 +52,15 @@ impl Version {
     }
 }
 
-#[inline(always)]
 pub fn pkg_name() -> String {
     let name = env!("CARGO_PKG_NAME");
     name.to_string()
 }
 
-#[inline(always)]
 pub fn current_version() -> Version {
     Version::from_cargo()
 }
 
-#[inline(always)]
 fn get_update_server() -> String {
     normalize_url(SELF_UPDATE_SERVER, "")
 }
@@ -81,7 +77,6 @@ pub async fn get_latest(
     Some(Version::from_string(version_str))
 }
 
-#[inline(always)]
 #[allow(unreachable_code)]
 fn get_arch() -> Result<String, String> {
     #[cfg(target_arch = "x86_64")]
@@ -164,7 +159,7 @@ pub async fn self_update(logger: &Logger) -> Result<i32, String> {
             Ok(0)
         },
         Some(_) => {
-            let msg = format!("already on the latest version ({})", installed);
+            let msg = format!("already on the latest version ({installed})");
             logger.log(msg.green().to_string());
 
             Ok(0)

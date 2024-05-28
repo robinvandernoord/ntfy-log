@@ -14,7 +14,7 @@ pub struct Logger {
 
 impl Logger {
     pub fn new(verbosity: &clap_verbosity_flag::Verbosity) -> Self {
-        Logger {
+        Self {
             prefix: Some(PREFIX.to_string()),
             verbosity: verbosity.log_level(),
         }
@@ -24,14 +24,14 @@ impl Logger {
         verbosity: &clap_verbosity_flag::Verbosity,
         prefix: &str,
     ) -> Self {
-        Logger {
+        Self {
             prefix: Some(prefix.to_string()),
             verbosity: verbosity.log_level(),
         }
     }
 
     const fn empty() -> Self {
-        Logger {
+        Self {
             prefix: None,
             verbosity: None,
         }
@@ -69,7 +69,7 @@ impl Logger {
         // only hide if 'quiet'
         if self.verbosity.is_some() {
             let level = "success".green().to_string();
-            self.fmt_print(&level, text)
+            self.fmt_print(&level, text);
         }
     }
 
@@ -99,7 +99,7 @@ impl Logger {
     ) {
         if self.verbosity.is_some_and(|v| v >= Level::Error) {
             let level = "error".red().to_string();
-            self.fmt_print(&level, text)
+            self.fmt_print(&level, text);
         }
     }
 
@@ -110,7 +110,7 @@ impl Logger {
         text: S2,
     ) {
         if self.verbosity.is_some_and(|v| v >= Level::Error) {
-            self.fmt_print(&prefix.into(), text)
+            self.fmt_print(&prefix.into(), text);
         }
     }
 
@@ -120,7 +120,7 @@ impl Logger {
     ) {
         if self.verbosity.is_some_and(|v| v >= Level::Warn) {
             let level = "warn".yellow().to_string();
-            self.fmt_print(&level, text)
+            self.fmt_print(&level, text);
         }
     }
 
@@ -130,7 +130,7 @@ impl Logger {
     ) {
         if self.verbosity.is_some_and(|v| v >= Level::Info) {
             let level = "info".blue().to_string();
-            self.fmt_print(&level, text)
+            self.fmt_print(&level, text);
         }
     }
 
@@ -140,7 +140,7 @@ impl Logger {
     ) {
         if self.verbosity.is_some_and(|v| v >= Level::Debug) {
             let level = "debug".purple().to_string();
-            self.fmt_print(&level, text)
+            self.fmt_print(&level, text);
         }
     }
 }
@@ -148,85 +148,85 @@ impl Logger {
 // == global logger == //
 
 pub struct GlobalLogger {
-    _logger: Logger,
+    inner_logger: Logger,
 }
 
 static mut GLOBAL_LOGGER: GlobalLogger = GlobalLogger::empty();
 
 impl GlobalLogger {
     const fn empty() -> Self {
-        GlobalLogger {
-            _logger: Logger::empty(),
+        Self {
+            inner_logger: Logger::empty(),
         }
     }
 
     pub fn singleton() -> &'static Logger {
-        unsafe { &GLOBAL_LOGGER._logger }
+        unsafe { &GLOBAL_LOGGER.inner_logger }
     }
 
     pub fn setup(verbosity: &clap_verbosity_flag::Verbosity) -> &'static Logger {
-        GlobalLogger::set_verbosity(verbosity);
-        GlobalLogger::set_prefix(PREFIX);
-        GlobalLogger::singleton()
+        Self::set_verbosity(verbosity);
+        Self::set_prefix(PREFIX);
+        Self::singleton()
     }
 
     pub fn get_prefix() -> &'static Option<String> {
-        unsafe { &GLOBAL_LOGGER._logger.prefix }
+        unsafe { &GLOBAL_LOGGER.inner_logger.prefix }
     }
 
     pub fn set_prefix(prefix: &str) -> &'static Logger {
         unsafe {
-            *GLOBAL_LOGGER._logger.prefix.borrow_mut() = Some(prefix.to_string());
-            &GLOBAL_LOGGER._logger
+            *GLOBAL_LOGGER.inner_logger.prefix.borrow_mut() = Some(prefix.to_string());
+            &GLOBAL_LOGGER.inner_logger
         }
     }
 
     pub fn get_verbosity() -> Option<Level> {
-        unsafe { GLOBAL_LOGGER._logger.verbosity }
+        unsafe { GLOBAL_LOGGER.inner_logger.verbosity }
     }
 
     pub fn set_verbosity(verbosity: &clap_verbosity_flag::Verbosity) -> &'static Logger {
         unsafe {
-            *GLOBAL_LOGGER._logger.verbosity.borrow_mut() = verbosity.log_level();
-            &GLOBAL_LOGGER._logger
+            *GLOBAL_LOGGER.inner_logger.verbosity.borrow_mut() = verbosity.log_level();
+            &GLOBAL_LOGGER.inner_logger
         }
     }
 
     pub fn log<S: Into<String>>(text: S) {
-        GlobalLogger::singleton().log(text)
+        Self::singleton().log(text);
     }
 
     pub fn success<S: Into<String>>(text: S) {
-        GlobalLogger::singleton().success(text)
+        Self::singleton().success(text);
     }
     pub fn warn<S: Into<String>>(text: S) {
-        GlobalLogger::singleton().warn(text)
+        Self::singleton().warn(text);
     }
 
     pub fn error<S: Into<String>>(text: S) {
-        GlobalLogger::singleton().error(text)
+        Self::singleton().error(text);
     }
     pub fn important<S1: Into<String>, S2: Into<String>>(
         prefix: S1,
         text: S2,
     ) {
-        GlobalLogger::singleton().important(prefix, text)
+        Self::singleton().important(prefix, text);
     }
 
     pub fn info<S: Into<String>>(text: S) {
-        GlobalLogger::singleton().info(text)
+        Self::singleton().info(text);
     }
 
     pub fn debug<S: Into<String>>(text: S) {
-        GlobalLogger::singleton().debug(text)
+        Self::singleton().debug(text);
     }
 
     pub fn stdout<S: Into<String>>(text: S) {
-        GlobalLogger::singleton().stdout(text)
+        Self::singleton().stdout(text);
     }
 
     pub fn stderr<S: Into<String>>(text: S) {
-        GlobalLogger::singleton().stderr(text)
+        Self::singleton().stderr(text);
     }
 }
 

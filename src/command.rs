@@ -17,7 +17,7 @@ pub struct CommandResult {
 }
 
 impl CommandResult {
-    pub fn success(&self) -> bool {
+    pub const fn success(&self) -> bool {
         self.exit_code == 0
     }
 
@@ -25,21 +25,19 @@ impl CommandResult {
         &self,
         topic: &str,
     ) -> Payload {
-        let priority = match self.success() {
-            true => Priority::Default,
-            false => Priority::High,
+        let priority = if self.success() {
+            Priority::Default
+        } else {
+            Priority::High
         };
 
-        let msg = match serde_json::to_string(self) {
-            Ok(msg) => msg,
-            Err(error) => {
-                let fallback = json!({
-                    "error": error.to_string(),
-                });
+        let msg = serde_json::to_string(self).unwrap_or_else(|error| {
+            let fallback = json!({
+                "error": error.to_string(),
+            });
 
-                fallback.to_string()
-            },
-        };
+            fallback.to_string()
+        });
 
         Payload::new(topic)
             .title(&self.command)
@@ -51,14 +49,14 @@ impl CommandResult {
 #[derive(Debug)]
 pub struct InvalidArgsNoStdIn {}
 
-/// Non-preferred way, since command, stderr and exit_code are all missing!
+/// Non-preferred way, since `command`, `stderr` and `exit_code` are all missing!
 pub fn try_stdin() -> Result<CommandResult, InvalidArgsNoStdIn> {
     if atty::is(Stream::Stdin) {
         return Err(InvalidArgsNoStdIn {});
     }
 
-    GlobalLogger::important("warn".yellow().to_string(), 
-    "Since complex bash commands (including pipes) is now supported by ntfy-push, using stdin is highly discouraged.");
+    GlobalLogger::important("warn".yellow().to_string(),
+                            "Since complex bash commands (including pipes) is now supported by ntfy-push, using stdin is highly discouraged.");
 
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
@@ -67,7 +65,7 @@ pub fn try_stdin() -> Result<CommandResult, InvalidArgsNoStdIn> {
         command: String::from("<stdin>"), // command is not known when getting data from stdin
         stdout: input,
 
-        stderr: String::from(""), // stderr is usually not piped, unless it is combined with stdout into stdin.
+        stderr: String::new(), // stderr is usually not piped, unless it is combined with stdout into stdin.
         exit_code: 0, // unfortunately, you can't get the exit code of a piped command ($PIPESTATUS is bash-only)
     })
 }
@@ -102,7 +100,7 @@ pub async fn run_cmd(args: &[String]) -> Result<CommandResult, InvalidArgsNoStdI
 
         Err(error) => CommandResult {
             command,
-            stdout: String::from(""),
+            stdout: String::new(),
             stderr: error.to_string(),
             exit_code: error.raw_os_error().unwrap_or(-1),
         },

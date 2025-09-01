@@ -67,34 +67,43 @@ jobs:
       - name: Collect commit messages since last tag
         id: changelog
         run: |
+          # Ensure we have all tags
+          git fetch --tags --force || true
+
           # Get the current tag
           current_tag="${GITHUB_REF_NAME}"
+          echo "Current tag: $current_tag"
+
+          # Get all tags for debugging
+          echo "All tags available:"
+          git tag -l --sort=-version:refname
 
           # Get the previous tag (excluding the current one)
           prev_tag=$(git tag -l --sort=-version:refname | grep -v "^${current_tag}$" | head -n 1)
+          echo "Previous tag: $prev_tag"
 
-          if [ -n "$prev_tag" ]; then
-            echo "Generating changelog from $prev_tag to $current_tag"
-            # Get actual commit hashes for the tags
-            prev_tag_hash=$(git rev-list -n 1 $prev_tag)
-            current_tag_hash=$(git rev-list -n 1 $current_tag)
-            # Get commits between tags, exclude version-only commit messages
-            notes=$(git log "${prev_tag_hash}..${current_tag_hash}^" --pretty=format:"- %s" --reverse | grep -v -E "^- [0-9]+\.[0-9]+\.[0-9]+$")
-          else
-            echo "No previous tag found, showing all commits up to current"
-            # Check if HEAD^ exists (i.e., there's more than one commit)
-            if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
-              notes=$(git log HEAD^ --pretty=format:"- %s" --reverse | grep -v -E "^- [0-9]+\.[0-9]+\.[0-9]+$")
-            else
-              # This is the first commit, no previous commits to show
-              notes="- Initial release"
-            fi
+          if [ -z "$prev_tag" ]; then
+            echo "ERROR: No previous tag found in existing repository!"
+            exit 1
           fi
+
+          echo "Generating changelog from $prev_tag to $current_tag"
+          # Get actual commit hashes for the tags
+          prev_tag_hash=$(git rev-list -n 1 $prev_tag)
+          current_tag_hash=$(git rev-list -n 1 $current_tag)
+          echo "Previous tag hash: $prev_tag_hash"
+          echo "Current tag hash: $current_tag_hash"
+
+          # Get commits between tags, exclude version-only commit messages
+          notes=$(git log "${prev_tag_hash}..${current_tag_hash}^" --pretty=format:"- %s" --reverse | grep -v -E "^- [0-9]+\.[0-9]+\.[0-9]+$")
 
           # If notes is empty, add a default message
           if [ -z "$notes" ]; then
             notes="- Release $current_tag"
           fi
+
+          echo "Final changelog:"
+          echo "$notes"
 
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$notes" >> $GITHUB_OUTPUT

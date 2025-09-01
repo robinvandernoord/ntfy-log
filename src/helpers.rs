@@ -1,9 +1,7 @@
+use crate::constants::DEFAULT_SCHEMA;
+use crate::log::GlobalLogger;
 use owo_colors::OwoColorize;
 use url::Url;
-
-use crate::log::GlobalLogger;
-
-const DEFAULT_SCHEMA: &str = "https://";
 
 pub fn normalize_url(
     partial_url: &str,
@@ -28,7 +26,7 @@ pub fn normalize_url(
         })
     });
 
-    return url.as_str().to_owned();
+    url.as_str().to_owned()
 }
 
 pub trait ResultToString<T, E> {

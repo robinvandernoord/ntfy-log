@@ -13,7 +13,10 @@ pub async fn get_json(url: &str) -> Option<Value> {
     let client = reqwest::Client::new();
     let response = client
         .get(url)
-        .header("User-Agent", format!("{}/{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")))
+        .header(
+            "User-Agent",
+            format!("{}/{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")),
+        )
         .send()
         .await;
 
@@ -28,7 +31,6 @@ pub async fn get_json(url: &str) -> Option<Value> {
         },
     }
 }
-
 
 async fn handle_response(
     response: Response,

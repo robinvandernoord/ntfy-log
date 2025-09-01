@@ -32,6 +32,8 @@ pub struct Cli {
 
 impl Cli {
     pub fn get_topic(&self) -> &str {
-        return self.topic.as_ref().unwrap();
+        self.topic
+            .as_ref()
+            .expect("topic is marked as `required = true` so we can assume it's there.")
     }
 }

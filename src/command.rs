@@ -76,7 +76,7 @@ pub async fn run_cmd(args: &[String]) -> Result<CommandResult, InvalidArgsNoStdI
     if args.is_empty() {
         // no subcommand arg(s), hopefully something was piped.
         return try_stdin();
-    };
+    }
 
     let command = args.join(" ");
     logger.info(command.blue().to_string());

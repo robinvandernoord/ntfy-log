@@ -18,7 +18,10 @@ pub struct Version {
 }
 
 impl fmt::Display for Version {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
         write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
     }
 }
@@ -44,7 +47,11 @@ impl Version {
         let minor = parts.next().unwrap_or("0").parse().unwrap_or(0);
         let patch = parts.next().unwrap_or("0").parse().unwrap_or(0);
 
-        Self { major, minor, patch }
+        Self {
+            major,
+            minor,
+            patch,
+        }
     }
 }
 
@@ -52,15 +59,20 @@ pub fn current_version() -> Version {
     Version::from_cargo()
 }
 
-fn github_releases_url() -> String {
-    format!("https://api.github.com/repos/{}/releases/latest", GITHUB_REPO)
+pub fn pkg_name() -> String {
+    let name = env!("CARGO_PKG_NAME");
+    name.to_string()
 }
 
-fn github_download_url(tag_name: &str, arch: &str) -> String {
-    format!(
-        "https://github.com/{}/releases/download/{}/ntfy-log-{}",
-        GITHUB_REPO, tag_name, arch
-    )
+fn github_releases_url() -> String {
+    format!("https://api.github.com/repos/{GITHUB_REPO}/releases/latest")
+}
+
+fn github_download_url(
+    tag_name: &str,
+    arch: &str,
+) -> String {
+    format!("https://github.com/{GITHUB_REPO}/releases/download/{tag_name}/ntfy-log-{arch}",)
 }
 
 pub async fn get_latest() -> Result<Version, String> {
@@ -82,13 +94,12 @@ fn get_arch() -> Result<&'static str, String> {
     match std::env::consts::ARCH {
         "x86_64" => Ok("x86_64"),
         "aarch64" => Ok("arm64"),
-        arch => Err(format!("Unsupported CPU architecture: {}", arch)),
+        arch => Err(format!("Unsupported CPU architecture: {arch}")),
     }
 }
 
 fn get_current_bin_location() -> Result<String, String> {
-    let exe_path = current_exe()
-        .map_err(|_| "Could not determine binary location")?;
+    let exe_path = current_exe().map_err(|_| "Could not determine binary location")?;
 
     exe_path
         .into_os_string()
@@ -96,11 +107,17 @@ fn get_current_bin_location() -> Result<String, String> {
         .map_err(|_| "Could not convert binary path to string".to_string())
 }
 
-fn install_binary(tmp_location: &str, bin_location: &str) -> Result<(), String> {
+fn install_binary(
+    tmp_location: &str,
+    bin_location: &str,
+) -> Result<(), String> {
     fs::rename(tmp_location, bin_location).map_err_to_string()
 }
 
-async fn download_latest(tag_name: &str, tmp_path: &str) -> Result<String, String> {
+async fn download_latest(
+    tag_name: &str,
+    tmp_path: &str,
+) -> Result<String, String> {
     let bin_location = get_current_bin_location()?;
     let arch = get_arch()?;
     let download_url = github_download_url(tag_name, arch);
@@ -141,7 +158,7 @@ pub async fn self_update(logger: &Logger) -> Result<i32, String> {
             ));
 
             Ok(0)
-        }
+        },
         Ok(_) => {
             logger.log(format!(
                 "Already on the latest version ({})",
@@ -149,7 +166,7 @@ pub async fn self_update(logger: &Logger) -> Result<i32, String> {
             ));
 
             Ok(0)
-        }
-        Err(e) => Err(format!("Could not get latest available version: {}", e)),
+        },
+        Err(e) => Err(format!("Could not get latest available version: {e}")),
     }
 }

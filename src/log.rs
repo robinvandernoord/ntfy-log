@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::borrow::BorrowMut;
+use std::sync::OnceLock;
 
 use clap_verbosity_flag::Level;
 use color_eyre::owo_colors::OwoColorize;
@@ -147,49 +147,28 @@ impl Logger {
 
 // == global logger == //
 
-pub struct GlobalLogger {
-    inner_logger: Logger,
-}
+static GLOBAL_LOGGER: OnceLock<Logger> = OnceLock::new();
 
-static mut GLOBAL_LOGGER: GlobalLogger = GlobalLogger::empty();
+pub struct GlobalLogger;
 
 impl GlobalLogger {
-    const fn empty() -> Self {
-        Self {
-            inner_logger: Logger::empty(),
-        }
-    }
-
     pub fn singleton() -> &'static Logger {
-        unsafe { &GLOBAL_LOGGER.inner_logger }
+        GLOBAL_LOGGER.get_or_init(Logger::empty)
     }
 
     pub fn setup(verbosity: &clap_verbosity_flag::Verbosity) -> &'static Logger {
-        Self::set_verbosity(verbosity);
-        Self::set_prefix(PREFIX);
-        Self::singleton()
+        GLOBAL_LOGGER.get_or_init(|| Logger::new(verbosity))
     }
 
-    pub fn get_prefix() -> &'static Option<String> {
-        unsafe { &GLOBAL_LOGGER.inner_logger.prefix }
-    }
-
-    pub fn set_prefix(prefix: &str) -> &'static Logger {
-        unsafe {
-            *GLOBAL_LOGGER.inner_logger.prefix.borrow_mut() = Some(prefix.to_string());
-            &GLOBAL_LOGGER.inner_logger
-        }
+    pub fn setup_with_prefix(
+        verbosity: &clap_verbosity_flag::Verbosity,
+        prefix: &str,
+    ) -> &'static Logger {
+        GLOBAL_LOGGER.get_or_init(|| Logger::new_with_prefix(verbosity, prefix))
     }
 
     pub fn get_verbosity() -> Option<Level> {
-        unsafe { GLOBAL_LOGGER.inner_logger.verbosity }
-    }
-
-    pub fn set_verbosity(verbosity: &clap_verbosity_flag::Verbosity) -> &'static Logger {
-        unsafe {
-            *GLOBAL_LOGGER.inner_logger.verbosity.borrow_mut() = verbosity.log_level();
-            &GLOBAL_LOGGER.inner_logger
-        }
+        Self::singleton().verbosity
     }
 
     pub fn log<S: Into<String>>(text: S) {
@@ -199,6 +178,7 @@ impl GlobalLogger {
     pub fn success<S: Into<String>>(text: S) {
         Self::singleton().success(text);
     }
+
     pub fn warn<S: Into<String>>(text: S) {
         Self::singleton().warn(text);
     }
@@ -206,6 +186,7 @@ impl GlobalLogger {
     pub fn error<S: Into<String>>(text: S) {
         Self::singleton().error(text);
     }
+
     pub fn important<S1: Into<String>, S2: Into<String>>(
         prefix: S1,
         text: S2,
@@ -232,7 +213,6 @@ impl GlobalLogger {
 
 #[cfg(test)]
 mod tests {
-
     use super::{GlobalLogger, Logger};
 
     #[test]

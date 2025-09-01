@@ -96,7 +96,7 @@ async fn main_with_exitcode(
     Ok(exit_code)
 }
 
-/// Run main_with_exitcode and exit with the returned exit code, or print any (non-panicking) error.
+/// Run `main_with_exitcode` and exit with the returned exit code, or print any (non-panicking) error.
 #[tokio::main]
 async fn main() -> ! {
     // color_eyre::install()?;

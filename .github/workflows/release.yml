@@ -1,12 +1,12 @@
 name: Release
 
-permissions:
-  contents: write
-
 on:
   push:
     tags:
       - '*'
+
+permissions:
+  contents: write  # needed to create releases
 
 jobs:
   build-amd64:
@@ -14,13 +14,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-gnu
-      - run: cargo build --release --target x86_64-unknown-linux-gnu
-      - uses: actions/upload-artifact@v4
+
+      - name: Build binary
+        run: cargo build --release --target x86_64-unknown-linux-gnu
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
         with:
-          name: ntfy-log-x86_64-unknown-linux-gnu
+          name: ntfy-log-x86_64
           path: target/x86_64-unknown-linux-gnu/release/ntfy-log
 
   build-arm64:
@@ -28,17 +34,23 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-unknown-linux-gnu
-      - run: cargo build --release --target aarch64-unknown-linux-gnu
-      - uses: actions/upload-artifact@v4
+
+      - name: Build binary
+        run: cargo build --release --target aarch64-unknown-linux-gnu
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
         with:
-          name: ntfy-log-aarch64-unknown-linux-gnu
+          name: ntfy-log-aarch64
           path: target/aarch64-unknown-linux-gnu/release/ntfy-log
 
   release:
-    name: Create Release
+    name: Create GitHub Release
     needs: [build-amd64, build-arm64]
     runs-on: ubuntu-latest
     steps:
@@ -57,10 +69,13 @@ jobs:
           echo "$notes" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Download built binaries
+      - name: Download binaries
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: List downloaded files (debug)
+        run: ls -R artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -69,4 +84,5 @@ jobs:
           tag_name: ${{ github.ref_name }}
           body: ${{ steps.changelog.outputs.notes }}
           files: |
-            artifacts/**/*
+            artifacts/ntfy-log-x86_64/ntfy-log
+            artifacts/ntfy-log-aarch64/ntfy-log

@@ -23,11 +23,14 @@ jobs:
       - name: Build binary
         run: cargo build --release --target x86_64-unknown-linux-gnu
 
+      - name: Rename binary for release
+        run: cp target/x86_64-unknown-linux-gnu/release/ntfy-log target/x86_64-unknown-linux-gnu/release/ntfy-log-x86_64
+
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
           name: ntfy-log-x86_64
-          path: target/x86_64-unknown-linux-gnu/release/ntfy-log
+          path: target/x86_64-unknown-linux-gnu/release/ntfy-log-x86_64
 
   build-arm64:
     name: Build aarch64-unknown-linux-gnu
@@ -43,11 +46,14 @@ jobs:
       - name: Build binary
         run: cargo build --release --target aarch64-unknown-linux-gnu
 
+      - name: Rename binary for release
+        run: cp target/aarch64-unknown-linux-gnu/release/ntfy-log target/aarch64-unknown-linux-gnu/release/ntfy-log-arm64
+
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
-          name: ntfy-log-aarch64
-          path: target/aarch64-unknown-linux-gnu/release/ntfy-log
+          name: ntfy-log-arm64
+          path: target/aarch64-unknown-linux-gnu/release/ntfy-log-arm64
 
   release:
     name: Create GitHub Release
@@ -84,5 +90,5 @@ jobs:
           tag_name: ${{ github.ref_name }}
           body: ${{ steps.changelog.outputs.notes }}
           files: |
-            artifacts/ntfy-log-x86_64/ntfy-log
-            artifacts/ntfy-log-aarch64/ntfy-log
+            artifacts/ntfy-log-x86_64/ntfy-log-x86_64
+            artifacts/ntfy-log-arm64/ntfy-log-arm64

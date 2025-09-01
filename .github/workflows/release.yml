@@ -67,8 +67,9 @@ jobs:
       - name: Collect commit messages since last tag
         id: changelog
         run: |
-          # Ensure we have all tags
+          # Ensure we have all tags and full history
           git fetch --tags --force || true
+          git fetch --unshallow || git fetch --depth=1000 || true
 
           # Get the current tag
           current_tag="${GITHUB_REF_NAME}"
@@ -93,6 +94,16 @@ jobs:
           current_tag_hash=$(git rev-list -n 1 $current_tag)
           echo "Previous tag hash: $prev_tag_hash"
           echo "Current tag hash: $current_tag_hash"
+
+          # Verify the commits exist in our repository
+          if ! git cat-file -e "$prev_tag_hash" 2>/dev/null; then
+            echo "ERROR: Previous tag commit $prev_tag_hash not found in repository"
+            exit 1
+          fi
+          if ! git cat-file -e "$current_tag_hash" 2>/dev/null; then
+            echo "ERROR: Current tag commit $current_tag_hash not found in repository"
+            exit 1
+          fi
 
           # Get commits between tags, exclude version-only commit messages
           notes=$(git log "${prev_tag_hash}..${current_tag_hash}^" --pretty=format:"- %s" --reverse | grep -v -E "^- [0-9]+\.[0-9]+\.[0-9]+$")

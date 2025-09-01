@@ -4,7 +4,7 @@ description = "Very simple CLI tool to log the result of a shell command to ntfy
 repository = "https://github.com/robinvandernoord/ntfy-log"
 keywords = ["logging", "ntfy", "ntfy-sh", "bash"]
 categories = ["development-tools", "development-tools::debugging"]
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 license = "MIT"
 

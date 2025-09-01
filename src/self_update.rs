@@ -1,12 +1,14 @@
 use owo_colors::OwoColorize;
 use std::env::current_exe;
-use std::fmt::{self};
+use std::fmt;
 use std::fs;
 
-use crate::constants::SELF_UPDATE_SERVER;
-use crate::helpers::{normalize_url, ResultToString};
+use crate::constants::GITHUB_REPO;
+use crate::helpers::ResultToString;
 use crate::http::{download_binary, download_binary_with_loading_indicator, get_json};
 use crate::log::{GlobalLogger, Logger};
+
+const TMP_DOWNLOAD_PATH: &str = "/tmp/download-ntfy-log.bin";
 
 #[derive(Debug, PartialEq, Eq, PartialOrd)]
 pub struct Version {
@@ -16,10 +18,7 @@ pub struct Version {
 }
 
 impl fmt::Display for Version {
-    fn fmt(
-        &self,
-        f: &mut fmt::Formatter<'_>,
-    ) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
     }
 }
@@ -31,139 +30,126 @@ impl Version {
         let patch = env!("CARGO_PKG_VERSION_PATCH");
 
         Self {
-            major: major.parse::<i32>().unwrap_or_default(),
-            minor: minor.parse::<i32>().unwrap_or_default(),
-            patch: patch.parse::<i32>().unwrap_or_default(),
+            major: major.parse().unwrap_or_default(),
+            minor: minor.parse().unwrap_or_default(),
+            patch: patch.parse().unwrap_or_default(),
         }
     }
 
     fn from_string(version_str: &str) -> Self {
-        let mut parts = version_str.split('.');
+        let clean_version = version_str.strip_prefix('v').unwrap_or(version_str);
+        let mut parts = clean_version.split('.');
 
         let major = parts.next().unwrap_or("0").parse().unwrap_or(0);
         let minor = parts.next().unwrap_or("0").parse().unwrap_or(0);
         let patch = parts.next().unwrap_or("0").parse().unwrap_or(0);
 
-        Self {
-            major,
-            minor,
-            patch,
-        }
+        Self { major, minor, patch }
     }
-}
-
-pub fn pkg_name() -> String {
-    let name = env!("CARGO_PKG_NAME");
-    name.to_string()
 }
 
 pub fn current_version() -> Version {
     Version::from_cargo()
 }
 
-fn get_update_server() -> String {
-    normalize_url(SELF_UPDATE_SERVER, "")
+fn github_releases_url() -> String {
+    format!("https://api.github.com/repos/{}/releases/latest", GITHUB_REPO)
 }
 
-#[inline(never)]
-pub async fn get_latest(
-    url: &str,
-    pkg: &str,
-) -> Option<Version> {
-    let json = get_json(url).await?;
-    let row = json.get(pkg)?;
-    let version_str = row.get("version")?.as_str()?;
-
-    Some(Version::from_string(version_str))
+fn github_download_url(tag_name: &str, arch: &str) -> String {
+    format!(
+        "https://github.com/{}/releases/download/{}/ntfy-log-{}",
+        GITHUB_REPO, tag_name, arch
+    )
 }
 
-#[allow(unreachable_code)]
-fn get_arch() -> Result<String, String> {
-    #[cfg(target_arch = "x86_64")]
-    return Ok(String::from("x86_64"));
+pub async fn get_latest() -> Result<Version, String> {
+    let url = github_releases_url();
 
-    #[cfg(target_arch = "aarch64")]
-    return Ok(String::from("aarch64"));
+    let json = get_json(&url)
+        .await
+        .ok_or("Failed to fetch release data from GitHub API")?;
 
-    Err(String::from("Unsupported cpu architecture."))
+    let tag_name = json
+        .get("tag_name")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing or invalid tag_name in GitHub response")?;
+
+    Ok(Version::from_string(tag_name))
+}
+
+fn get_arch() -> Result<&'static str, String> {
+    match std::env::consts::ARCH {
+        "x86_64" => Ok("x86_64"),
+        "aarch64" => Ok("arm64"),
+        arch => Err(format!("Unsupported CPU architecture: {}", arch)),
+    }
 }
 
 fn get_current_bin_location() -> Result<String, String> {
-    let err = String::from("Could not determine binary location");
+    let exe_path = current_exe()
+        .map_err(|_| "Could not determine binary location")?;
 
-    let exe_path = current_exe().map_err(|_| &err)?;
-
-    exe_path.into_os_string().into_string().map_err(|_| err)
+    exe_path
+        .into_os_string()
+        .into_string()
+        .map_err(|_| "Could not convert binary path to string".to_string())
 }
 
-fn install_binary(
-    tmp_location: &str,
-    bin_location: &str,
-) -> Result<(), String> {
+fn install_binary(tmp_location: &str, bin_location: &str) -> Result<(), String> {
     fs::rename(tmp_location, bin_location).map_err_to_string()
 }
 
-async fn download_latest(
-    url: &str,
-    pkg: &str,
-    tmp: &str,
-) -> Result<String, String> {
+async fn download_latest(tag_name: &str, tmp_path: &str) -> Result<String, String> {
     let bin_location = get_current_bin_location()?;
-    let arch = &get_arch()?;
-
-    let download_url = format!("{url}/{arch}/{pkg}");
+    let arch = get_arch()?;
+    let download_url = github_download_url(tag_name, arch);
 
     if GlobalLogger::get_verbosity().is_some() {
-        download_binary_with_loading_indicator(&download_url, tmp).await?;
+        download_binary_with_loading_indicator(&download_url, tmp_path).await?;
     } else {
-        download_binary(&download_url, tmp).await?;
+        download_binary(&download_url, tmp_path).await?;
     }
 
-    install_binary(tmp, &bin_location)?;
-
+    install_binary(tmp_path, &bin_location)?;
     Ok(bin_location)
 }
 
-fn cleanup(file: &str) {
-    fs::remove_file(file).unwrap_or_default();
+fn cleanup_temp_file(file_path: &str) {
+    fs::remove_file(file_path).unwrap_or_default();
 }
 
-async fn download_latest_with_cleanup(
-    url: &str,
-    pkg: &str,
-) -> Result<String, String> {
-    let tmp_location = String::from("/tmp/download-ntfy-log.bin");
-    let result = download_latest(url, pkg, &tmp_location).await;
-
-    cleanup(&tmp_location); // remove trailing tmpfile whether download and install completed or not
-
+async fn download_latest_with_cleanup(tag_name: &str) -> Result<String, String> {
+    let result = download_latest(tag_name, TMP_DOWNLOAD_PATH).await;
+    cleanup_temp_file(TMP_DOWNLOAD_PATH);
     result
 }
 
 pub async fn self_update(logger: &Logger) -> Result<i32, String> {
     let installed = current_version();
-    let url = get_update_server();
-    let pkg = pkg_name();
 
-    match get_latest(&url, &pkg).await {
-        Some(available) if available > installed => {
-            let location = download_latest_with_cleanup(&url, &pkg).await?;
+    match get_latest().await {
+        Ok(available) if available > installed => {
+            let tag_name = available.to_string();
+            let location = download_latest_with_cleanup(&tag_name).await?;
 
             logger.success(format!(
-                "upgraded {} from {} to {}",
+                "Upgraded {} from {} to {}",
                 location.blue(),
                 installed.blue(),
                 available.green()
             ));
 
             Ok(0)
-        },
-        Some(_) => {
-            let msg = format!("already on the latest version ({installed})");
-            logger.log(msg.green().to_string());
+        }
+        Ok(_) => {
+            logger.log(format!(
+                "Already on the latest version ({})",
+                installed.to_string().green()
+            ));
 
             Ok(0)
-        },
-        None => Err(String::from("Could not get latest available version")),
+        }
+        Err(e) => Err(format!("Could not get latest available version: {}", e)),
     }
 }

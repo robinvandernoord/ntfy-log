@@ -10,7 +10,13 @@ use tokio::task;
 use crate::log::GlobalLogger;
 
 pub async fn get_json(url: &str) -> Option<Value> {
-    let response = reqwest::get(url).await;
+    let client = reqwest::Client::new();
+    let response = client
+        .get(url)
+        .header("User-Agent", format!("{}/{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")))
+        .send()
+        .await;
+
     match response {
         Ok(response) => {
             let json: Value = response.json().await.ok()?;
@@ -22,6 +28,7 @@ pub async fn get_json(url: &str) -> Option<Value> {
         },
     }
 }
+
 
 async fn handle_response(
     response: Response,

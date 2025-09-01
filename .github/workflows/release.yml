@@ -65,12 +65,28 @@ jobs:
       - name: Collect commit messages since last tag
         id: changelog
         run: |
-          prev_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          # Fetch all tags and history
+          git fetch --tags --unshallow || git fetch --tags
+
+          # Get the current tag
+          current_tag=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "${GITHUB_REF_NAME}")
+
+          # Get the previous tag (excluding the current one)
+          prev_tag=$(git tag -l --sort=-version:refname | grep -v "^${current_tag}$" | head -n 1)
+
           if [ -n "$prev_tag" ]; then
-            notes=$(git log "$prev_tag"..HEAD --pretty=format:"- %s")
+            echo "Generating changelog from $prev_tag to $current_tag"
+            notes=$(git log "$prev_tag".."$current_tag" --pretty=format:"- %s" --reverse)
           else
-            notes=$(git log --pretty=format:"- %s")
+            echo "No previous tag found, showing all commits"
+            notes=$(git log --pretty=format:"- %s" --reverse)
           fi
+
+          # If notes is empty, add a default message
+          if [ -z "$notes" ]; then
+            notes="- Release $current_tag"
+          fi
+
           echo "notes<<EOF" >> $GITHUB_OUTPUT
           echo "$notes" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
